@@ -1,6 +1,8 @@
 from src.utils.utils import time_handler
 from dbs.sqlite_base import conn, cursor
 
+from dbs.ghtorrent_base import gh_conn, gh_cursor
+
 def sloc(repo_id, pr_id):
     pass
 
@@ -52,10 +54,10 @@ def pr_succ_rate(repo_id, pr_id):
 def stars(repo_id, pr_id):
     pass
 
-def test_cases_per_kloc (repo_id, pr_id):
+def test_cases_per_kloc(repo_id, pr_id):
     pass
 
-def perc_external_contri(repo_id, pr_id):
+def perc_external_contribs(repo_id, pr_id):
     pass
 
 def team_size(repo_id, pr_id):
@@ -102,6 +104,18 @@ def open_pr_num(repo_id, pr_id):
 
 
 def fork_num(repo_id, pr_id):
+    sql = '''select * from projects limit 5;'''
+    gh_cursor.execute(sql)
+    result = gh_cursor.fetchall()
+    for res in result:
+        print(res)
+    return {}
+    sql = '''--sql
+        select count(*) as num_forks 
+        from projects p
+        where p.created_at < ? 
+        and p.forked_from = ?
+    ;'''
     pass
 
 def test_lines_per_kloc(repo_id, pr_id):
