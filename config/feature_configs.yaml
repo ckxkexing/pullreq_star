@@ -1,0 +1,71 @@
+features:
+  - name: src.features.pull_request.num_commits
+    enabled: true
+  - name: src.features.pull_request.files_changed  
+    enabled: false
+  - name: src.features.pull_request.files_added
+    enabled: false
+  - name: src.features.pull_request.files_deleted
+    enabled: false
+  - name: src.features.pull_request.churn_addition
+    enabled: false
+  - name: src.features.pull_request.churn_deletion
+    enabled: false
+  - name: src.features.pull_request.test_inclusion
+    enabled: false
+  - name: src.features.pull_request.test_churn 
+    enabled: false
+  - name: src.features.pull_request.src_churn 
+    enabled: false
+  - name: src.features.pull_request.description_length
+    enabled: false
+  - name: src.features.pull_request.commits_on_files_touched
+    enabled: false
+
+  - name: src.features.project.sloc
+    enabled: false
+  - name: src.features.project.project_age
+    enabled: false
+  - name: src.features.project.pushed_delta
+    enabled: false
+  - name: src.features.project.pr_succ_rate
+    enabled: false
+  - name: src.features.project.stars
+    enabled: false
+  - name: src.features.project.test_cases_per_kloc
+    enabled: false
+  - name: src.features.project.perc_external_contribs
+    enabled: false
+  - name: src.features.project.team_size 
+    enabled: false
+  - name: src.features.project.open_issue_num 
+    enabled: false
+  - name: src.features.project.open_pr_num
+    enabled: false
+  - name: src.features.project.fork_num
+    enabled: false
+  - name: src.features.project.test_lines_per_kloc 
+    enabled: false
+  - name: src.features.project.asserts_per_kloc
+    enabled: false
+  - name: src.features.project.requester_succ_rate
+    enabled: false
+
+  - name: src.features.contributor.bot_user
+    enabled: false
+  - name: src.features.contributor.first_pr
+    enabled: false
+  - name: src.features.contributor.core_member
+    enabled: false
+  - name: src.features.contributor.social_strength
+    enabled: false
+  - name: src.features.contributor.followers
+    enabled: false
+  - name: src.features.contributor.prev_pullreqs 
+    enabled: false
+  - name: src.features.contributor.contrib_perc_commit
+    enabled: false
+  - name: src.features.contributor.prior_review_num
+    enabled: false
+  - name: src.features.contributor.prior_interaction 
+    enabled: false

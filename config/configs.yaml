@@ -1,0 +1,9 @@
+sqlite3:
+  path: "/data1/kexingchen/ePR.db"
+  patch_path: "/data1/kexingchen/ePR_patch.db"
+
+
+raw_data: "/data1/kexingchen/star_50"
+repo_dir: "/data1/kexingchen/star_50/clone_star_50_projects"
+
+repo_list: "./project_list.txt"
