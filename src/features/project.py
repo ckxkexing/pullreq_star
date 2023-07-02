@@ -104,19 +104,37 @@ def open_pr_num(repo_id, pr_id):
 
 
 def fork_num(repo_id, pr_id):
-    sql = '''select * from projects limit 5;'''
+
+    # get full name
+    sql = f'''select full_name from projects where id = {repo_id}'''
+    with conn:
+        cursor.execute(sql)
+        repo_name = cursor.fetchone()['full_name']
+        owner, name = repo_name.split("/")
+
+    # get repo_id in ghtorrent
+    sql = f'''select id from users where login = '{owner}' '''
     gh_cursor.execute(sql)
-    result = gh_cursor.fetchall()
-    for res in result:
-        print(res)
-    return {}
-    sql = '''--sql
+    id = gh_cursor.fetchone()['id']
+    sql = f'''select id from projects where owner_id={id} and name='{name}' '''
+    gh_cursor.execute(sql)
+    id = gh_cursor.fetchone()['id']
+    
+    sql = f'''select created_at from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        created_at = cursor.fetchone()['created_at']
+
+    # get fork count
+    sql = f'''
         select count(*) as num_forks 
         from projects p
-        where p.created_at < ? 
-        and p.forked_from = ?
-    ;'''
-    pass
+        where p.created_at < '{created_at}'
+            and p.forked_from = {id}
+    '''
+    gh_cursor.execute(sql)
+    res = gh_cursor.fetchone()['num_forks']
+    return {"num_forks" : res}
 
 def test_lines_per_kloc(repo_id, pr_id):
     pass
