@@ -62,10 +62,44 @@ def team_size(repo_id, pr_id):
     pass
 
 def open_issue_num(repo_id, pr_id):
-    pass
+    sql = '''--sql
+        SELECT
+            SUM(CASE WHEN issues.created_at < (SELECT created_at FROM prs WHERE id = ?) THEN 1 ELSE 0 END) AS opened_num,
+            SUM(CASE WHEN issues.closed_at is not NULL and issues.closed_at < (SELECT created_at FROM prs WHERE id = ?) THEN 1 ELSE 0 END) AS closed_num
+        FROM
+            issues
+        WHERE
+            issues.project_id = ? AND
+            issues.pr_id = 0
+    ;
+    '''
+    with conn:
+        cursor.execute(sql, (pr_id, pr_id, repo_id))
+        result = cursor.fetchone()
+        opened_num = result['opened_num']
+        closed_num = result['closed_num']
+        return {"open_issue_num": opened_num - closed_num}
+
 
 def open_pr_num(repo_id, pr_id):
-    pass
+    sql = '''--sql
+        SELECT
+            SUM(CASE WHEN issues.created_at < (SELECT created_at FROM prs WHERE id = ?) THEN 1 ELSE 0 END) AS opened_num,
+            SUM(CASE WHEN issues.closed_at is not NULL and issues.closed_at < (SELECT created_at FROM prs WHERE id = ?) THEN 1 ELSE 0 END) AS closed_num
+        FROM
+            issues
+        WHERE
+            issues.project_id = ? AND
+            issues.pr_id > 0
+    ;
+    '''
+    with conn:
+        cursor.execute(sql, (pr_id, pr_id, repo_id))
+        result = cursor.fetchone()
+        opened_num = result['opened_num']
+        closed_num = result['closed_num']
+        return {"open_pr_num": opened_num - closed_num}
+
 
 def fork_num(repo_id, pr_id):
     pass
