@@ -28,10 +28,11 @@ if __name__ == "__main__":
     repo_id = get_project_by_full_name(f"{owner}/{repo}")
 
     prs = list_pr(repo_id)
+
     featured_prs = []
-    for pr in prs[:10]:
-        # exec feature_func
-        pr_id = pr['id']
+    for i, pr in enumerate(prs[:30]):
         for feature_func, function_name in hook_functions:
-            pr[function_name] = run_with_pr_id(feature_func, repo_id, pr_id)
-            featured_prs.append(pr)
+            # exec feature_func
+            pr_id = pr['id']
+            prs[i].update(run_with_pr_id(feature_func, repo_id, pr_id))
+        print(prs[i])

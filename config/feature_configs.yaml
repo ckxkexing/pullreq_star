@@ -1,22 +1,10 @@
 features:
   - name: src.features.pull_request.num_commits
+    enabled: false
+  - name: src.features.pull_request.files_level # [files_changed, files_modified, files_added, files_deleted]
+    enabled: false
+  - name: src.features.pull_request.churn_level # [churn_addition, churn_deletion, test_churn, src_churn, test_inclusion]
     enabled: true
-  - name: src.features.pull_request.files_changed  
-    enabled: false
-  - name: src.features.pull_request.files_added
-    enabled: false
-  - name: src.features.pull_request.files_deleted
-    enabled: false
-  - name: src.features.pull_request.churn_addition
-    enabled: false
-  - name: src.features.pull_request.churn_deletion
-    enabled: false
-  - name: src.features.pull_request.test_inclusion
-    enabled: false
-  - name: src.features.pull_request.test_churn 
-    enabled: false
-  - name: src.features.pull_request.src_churn 
-    enabled: false
   - name: src.features.pull_request.description_length
     enabled: false
   - name: src.features.pull_request.commits_on_files_touched

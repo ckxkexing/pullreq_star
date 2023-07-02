@@ -6,3 +6,8 @@
 ```sh
 python -m src.main
 ```
+
+### Thanks
+- Gousios
+- Xunhui Zhang
+- Myself
