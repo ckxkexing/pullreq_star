@@ -8,7 +8,7 @@ def first_pr(repo_id, pr_id):
     pass
 
 def core_member(repo_id, pr_id, months_back=None):
-    # get pr created_at
+    # get pr created_at and creator_id
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
     with conn:
         cursor.execute(sql)
@@ -72,7 +72,25 @@ def followers(repo_id, pr_id):
     return {"followers" : res}
 
 def prev_pullreqs(repo_id, pr_id):
-    pass
+    # get pr created_at and creator_id
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        created_at = res['created_at']
+        user_id = res['creator_id']
+
+    sql = f'''--sql
+        select count(p.id) as cnt
+        from prs p 
+        where p.base_repo_id = {repo_id} and p.creator_id = {user_id} and p.created_at < "{created_at}"
+    ;
+    '''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()['cnt']
+        return {"prev_pullreqs" : res}
+
 
 def contrib_perc_commit(repo_id, pr_id):
     pass
