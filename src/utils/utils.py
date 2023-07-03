@@ -10,3 +10,6 @@ def write_csv_data(csv_file_name, header, data):
 def time_handler(target_time: str):
     _date = datetime.datetime.strptime(target_time, "%Y-%m-%dT%H:%M:%SZ")
     return _date
+
+def str_handler(date):
+    return date.strftime('%Y-%m-%dT%H:%M:%SZ')
