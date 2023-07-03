@@ -91,8 +91,51 @@ def stars(repo_id, pr_id):
 def test_cases_per_kloc(repo_id, pr_id):
     pass
 
-def perc_external_contribs(repo_id, pr_id):
-    pass
+def perc_external_contribs(repo_id, pr_id, months_back=3):
+    # get pr created_at and creator_id
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        created_at = res['created_at']
+
+    oldest = time_handler(created_at) - relativedelta(months=months_back)
+    oldest = str_handler(oldest)
+
+    # get core member list
+    sql = f'''
+        select user_id 
+        from core_members c
+        where project_id = {repo_id}
+            and created_at < "{created_at}"
+            and created_at >= "{oldest}"   
+    '''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchall()
+        core_numbers = [u['user_id'] for u in res]
+    core_numbers = set(core_numbers)
+    # get github commit author list
+    sql = f'''
+        select author_id
+        from project_commits pc, commits c
+        where pc.commit_id = c.id
+            and created_at < "{created_at}"
+            and created_at >= "{oldest}" 
+            and pc.project_id = {repo_id}
+    '''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchall()
+        committer_numbers = [u['author_id'] for u in res]
+
+    all_commit_num = len(committer_numbers)
+    external_commit_num = 0
+    for u in committer_numbers:
+        if u not in core_numbers:
+            external_commit_num += 1
+        
+    return {"perc_external_contribs" : external_commit_num / all_commit_num if all_commit_num else 0}
 
 def team_size(repo_id, pr_id, months_back=3):
     # get pr created_at and creator_id
