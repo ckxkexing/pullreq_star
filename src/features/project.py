@@ -50,7 +50,34 @@ def pushed_delta(repo_id, pr_id):
         return {"pushed_delta": divmod((current_created_at - previous_created_at).total_seconds(), 3600)[0]}
 
 def pr_succ_rate(repo_id, pr_id):
-    pass
+    # pr_before_merged / pr_before
+
+    # get pr created_at 
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        created_at = res['created_at']
+
+    sql = f'''
+        select p.id, pmd.merge
+        from prs p
+        left join pr_merge_decision pmd
+        on p.id = pmd.pr_id
+        where p.closed_at < "{created_at}"
+            and p.base_repo_id = {repo_id}
+    '''
+
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchall()
+        all_pr_num = len(res)
+        merge_pr_num = 0
+        for pr in res:
+            if pr['merge'] > 0:
+                merge_pr_num += 1
+        return {"pr_succ_rate":merge_pr_num/all_pr_num if all_pr_num else 0}
+
 
 def stars(repo_id, pr_id):
     # in zhang's work, it is watcher count
@@ -86,7 +113,6 @@ def stars(repo_id, pr_id):
     gh_cursor.execute(sql)
     res = gh_cursor.fetchone()['num_watchers']
     return {"stars" : res}
-
 
 def test_cases_per_kloc(repo_id, pr_id):
     pass
@@ -134,7 +160,7 @@ def perc_external_contribs(repo_id, pr_id, months_back=3):
     for u in committer_numbers:
         if u not in core_numbers:
             external_commit_num += 1
-        
+
     return {"perc_external_contribs" : external_commit_num / all_commit_num if all_commit_num else 0}
 
 def team_size(repo_id, pr_id, months_back=3):
@@ -238,5 +264,3 @@ def test_lines_per_kloc(repo_id, pr_id):
 def asserts_per_kloc(repo_id, pr_id):
     pass
 
-def requester_succ_rate(repo_id, pr_id):
-    pass

@@ -132,7 +132,6 @@ def contrib_perc_commit(repo_id, pr_id):
 
     return {"contrib_perc_commit" : contrib_commit_num / all_commit_num if all_commit_num else 0}
 
-
 def prior_review_num(repo_id, pr_id):
     # get pr created_at and creator_id
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
@@ -170,3 +169,33 @@ def prior_interaction(repo_id, pr_id):
             r_prior_interaction_commits + r_prior_interaction_commit_comments,
     '''
     pass
+
+
+def requester_succ_rate(repo_id, pr_id):
+    # get pr created_at and creator_id
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        created_at = res['created_at']
+        user_id = res['creator_id']
+
+    sql = f'''
+        select p.id, pmd.merge
+        from prs p
+        left join pr_merge_decision pmd
+        on p.id = pmd.pr_id
+        where p.closed_at < "{created_at}"
+            and p.creator_id = {user_id}
+            and p.base_repo_id = {repo_id}
+    '''
+
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchall()
+        all_pr_num = len(res)
+        merge_pr_num = 0
+        for pr in res:
+            if pr['merge'] > 0:
+                merge_pr_num += 1
+        return {"requester_succ_rate":merge_pr_num/all_pr_num if all_pr_num else 0}
