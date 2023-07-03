@@ -1,7 +1,15 @@
+from dateutil.relativedelta import relativedelta
+from src.utils.utils import time_handler, str_handler
 from dbs.sqlite_base import conn, cursor
 from dbs.ghtorrent_base import gh_conn, gh_cursor
 
 def bot_user(repo_id, pr_id):
+    '''
+       by account type
+       or login name
+       or manual check
+    '''
+
     pass
 
 def first_pr(repo_id, pr_id):
@@ -93,7 +101,37 @@ def prev_pullreqs(repo_id, pr_id):
         return {"prev_pullreqs" : res, "first_pr" : first_pr}
 
 def contrib_perc_commit(repo_id, pr_id):
-    pass
+    # % of previous contributor’s commit
+
+    # get pr created_at and creator_id
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        created_at = res['created_at']
+        creator_id = res['creator_id']
+
+    # get github commit author list
+    sql = f'''
+        select author_id
+        from project_commits pc, commits c
+        where pc.commit_id = c.id
+            and created_at < "{created_at}"
+            and pc.project_id = {repo_id}
+    '''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchall()
+        committer_numbers = [u['author_id'] for u in res]
+
+    all_commit_num = len(committer_numbers)
+    contrib_commit_num = 0
+    for u in committer_numbers:
+        if u == creator_id:
+            contrib_commit_num += 1
+
+    return {"contrib_perc_commit" : contrib_commit_num / all_commit_num if all_commit_num else 0}
+
 
 def prior_review_num(repo_id, pr_id):
     # get pr created_at and creator_id
@@ -125,4 +163,10 @@ def prior_review_num(repo_id, pr_id):
 
 
 def prior_interaction(repo_id, pr_id):
+    '''
+      :prior_interaction => 
+            r_prior_interaction_issue_events + r_prior_interaction_issue_comments +
+            r_prior_interaction_pr_events + r_prior_interaction_pr_comments +
+            r_prior_interaction_commits + r_prior_interaction_commit_comments,
+    '''
     pass
