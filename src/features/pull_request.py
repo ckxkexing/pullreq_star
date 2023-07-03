@@ -163,5 +163,16 @@ def description_length(repo_id, pr_id, at_open=True):
     return {"description_length": global_description_length_map[pr_id] if pr_id in global_description_length_map else 0}
 
 
-def commits_on_files_touched (repo_id, pr_id):
-    pass
+def commits_on_files_touched(repo_id, pr_id):
+    sql = '''
+        select coft 
+        from pr_commits_of_file_touched
+        where pr_id = ?
+    '''
+
+    with conn:
+        cursor.execute(sql, (pr_id, ))
+        res = cursor.fetchone()
+        res = res['coft'] if res else 0
+
+    return {"coft" : res}

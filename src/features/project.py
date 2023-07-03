@@ -52,7 +52,39 @@ def pr_succ_rate(repo_id, pr_id):
     pass
 
 def stars(repo_id, pr_id):
-    pass
+    # in zhang's work, it is watcher count
+    # get full name
+    sql = f'''select full_name from projects where id = {repo_id}'''
+    with conn:
+        cursor.execute(sql)
+        repo_name = cursor.fetchone()['full_name']
+        owner, name = repo_name.split("/")
+
+    # get repo_id in ghtorrent
+    sql = f'''select id from users where login = '{owner}' '''
+    gh_cursor.execute(sql)
+    id = gh_cursor.fetchone()['id']
+    sql = f'''select id from projects where owner_id={id} and name='{name}' '''
+    gh_cursor.execute(sql)
+    id = gh_cursor.fetchone()['id']
+
+    # get pr created time
+    sql = f'''select created_at from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        created_at = cursor.fetchone()['created_at']
+
+    # get watcher count
+    sql = f'''
+        select count(w.user_id) as num_watchers
+        from reduced_watchers w
+        where w.created_at < '{created_at}'
+            and w.repo_id = {id}
+    '''
+    gh_cursor.execute(sql)
+    res = gh_cursor.fetchone()['num_watchers']
+    return {"stars" : res}
+
 
 def test_cases_per_kloc(repo_id, pr_id):
     pass
@@ -102,9 +134,7 @@ def open_pr_num(repo_id, pr_id):
         closed_num = result['closed_num']
         return {"open_pr_num": opened_num - closed_num}
 
-
 def fork_num(repo_id, pr_id):
-
     # get full name
     sql = f'''select full_name from projects where id = {repo_id}'''
     with conn:
@@ -135,6 +165,7 @@ def fork_num(repo_id, pr_id):
     gh_cursor.execute(sql)
     res = gh_cursor.fetchone()['num_forks']
     return {"num_forks" : res}
+
 
 def test_lines_per_kloc(repo_id, pr_id):
     pass
