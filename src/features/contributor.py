@@ -5,6 +5,7 @@ def bot_user(repo_id, pr_id):
     pass
 
 def first_pr(repo_id, pr_id):
+    # see in prev_pullreqs
     pass
 
 def core_member(repo_id, pr_id, months_back=None):
@@ -30,7 +31,6 @@ def core_member(repo_id, pr_id, months_back=None):
         if len(res) > 0:
             flag = 1
         return {"core_member" : flag}
-
 
 def social_strength(repo_id, pr_id):
     pass
@@ -89,14 +89,40 @@ def prev_pullreqs(repo_id, pr_id):
     with conn:
         cursor.execute(sql)
         res = cursor.fetchone()['cnt']
-        return {"prev_pullreqs" : res}
-
+        first_pr = 1 if res == 0 else 0
+        return {"prev_pullreqs" : res, "first_pr" : first_pr}
 
 def contrib_perc_commit(repo_id, pr_id):
     pass
 
 def prior_review_num(repo_id, pr_id):
-    pass
+    # get pr created_at and creator_id
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        created_at = res['created_at']
+        user_id = res['creator_id']
+
+    sql = f'''
+        select count(a.id) as prior_review_num
+        from (
+            select p.id, i.id as issue_id
+            from prs p  
+            join issues i on p.id = i.pr_id
+            where p.base_repo_id = {repo_id} 
+                and p.closed_at < '{created_at}'
+                and p.created_at != {user_id}
+        ) a 
+        join issue_events ie on
+        a.issue_id = ie.issue_id and (ie.event = 'merged' or ie.event = 'closed')
+    '''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        res = res['prior_review_num']
+        return {"prior_review_num": res}
+
 
 def prior_interaction(repo_id, pr_id):
     pass
