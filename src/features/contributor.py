@@ -1,4 +1,5 @@
 from dbs.sqlite_base import conn, cursor
+from dbs.ghtorrent_base import gh_conn, gh_cursor
 
 def bot_user(repo_id, pr_id):
     pass
@@ -13,7 +14,41 @@ def social_strength(repo_id, pr_id):
     pass
 
 def followers(repo_id, pr_id):
-    pass
+    # get user_id in ghtorrent
+    sql = f'''
+        select p.creator_id , u.login 
+        from prs p , users u  
+        where p.id = {pr_id} and p.creator_id = u.id 
+    '''
+    with conn:
+        cursor.execute(sql)
+        user_name = cursor.fetchone()['login']
+    
+    sql = f'''
+        select id 
+        from reduced_users r
+        where r.login = '{user_name}'
+    '''
+    gh_cursor.execute(sql)
+    user_id = gh_cursor.fetchone()['id']
+
+    # get pr created_at
+    sql = f'''select created_at from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        created_at = cursor.fetchone()['created_at']
+
+    # get fork count
+    sql = f'''
+        select count(f.follower_id) as num_followers
+        from reduced_followers f
+        where f.user_id = {user_id}
+        and f.created_at < '{created_at}'
+    '''
+    gh_cursor.execute(sql)
+    res = gh_cursor.fetchone()['num_followers']
+    return {"followers" : res}
+
 
 def prev_pullreqs(repo_id, pr_id):
     pass

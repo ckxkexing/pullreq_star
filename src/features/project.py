@@ -149,7 +149,7 @@ def fork_num(repo_id, pr_id):
     sql = f'''select id from projects where owner_id={id} and name='{name}' '''
     gh_cursor.execute(sql)
     id = gh_cursor.fetchone()['id']
-    
+    # get pr created_at
     sql = f'''select created_at from prs where id = {pr_id}'''
     with conn:
         cursor.execute(sql)
