@@ -1,4 +1,5 @@
-from src.utils.utils import time_handler
+from dateutil.relativedelta import relativedelta
+from src.utils.utils import time_handler, str_handler
 from dbs.sqlite_base import conn, cursor
 
 from dbs.ghtorrent_base import gh_conn, gh_cursor
@@ -53,6 +54,7 @@ def pr_succ_rate(repo_id, pr_id):
 
 def stars(repo_id, pr_id):
     # in zhang's work, it is watcher count
+
     # get full name
     sql = f'''select full_name from projects where id = {repo_id}'''
     with conn:
@@ -92,8 +94,29 @@ def test_cases_per_kloc(repo_id, pr_id):
 def perc_external_contribs(repo_id, pr_id):
     pass
 
-def team_size(repo_id, pr_id):
-    pass
+def team_size(repo_id, pr_id, months_back=3):
+    # get pr created_at and creator_id
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        created_at = res['created_at']
+        user_id = res['creator_id']
+
+    oldest = time_handler(created_at) - relativedelta(months=months_back)
+    oldest = str_handler(oldest)
+
+    sql = f'''
+        select count(user_id) as team_size
+        from core_members c
+        where project_id = {repo_id}
+            and created_at < "{created_at}"
+            and created_at >= "{oldest}"
+    '''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        return {"team_size": res['team_size']}
 
 def open_issue_num(repo_id, pr_id):
     sql = '''--sql
@@ -113,7 +136,6 @@ def open_issue_num(repo_id, pr_id):
         opened_num = result['opened_num']
         closed_num = result['closed_num']
         return {"open_issue_num": opened_num - closed_num}
-
 
 def open_pr_num(repo_id, pr_id):
     sql = '''--sql
