@@ -4,6 +4,7 @@ from src.utils.utils import time_handler, str_handler
 from dbs.sqlite_base import conn, cursor
 from dbs.ghtorrent_base import gh_conn, gh_cursor
 
+
 def bot_user(repo_id, pr_id):
 
     # get pr created_at and creator_id
@@ -62,9 +63,83 @@ def core_member(repo_id, pr_id, months_back=None):
             flag = 1
         return {"core_member" : flag}
 
-# Todo
-def social_strength(repo_id, pr_id):
-    pass
+def social_strength(repo_id, pr_id, months_back=3):
+
+    # get pr created_at and creator_id
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        created_at = res['created_at']
+        creator_id = res['creator_id']
+
+    oldest = time_handler(created_at) - relativedelta(months=months_back)
+    oldest = str_handler(oldest)
+
+    def commented_issues(actor):
+        # contain issues and prs' comment activities
+        sql = f'''
+            select i.number
+            from issues i, issue_comments ic
+            where i.id = ic.issue_id
+                and ic.creator_id = {creator_id}
+                and i.project_id = {actor}
+                and ic.created_at > "{oldest}"
+                and ic.created_at < "{created_at}"
+        '''
+        with conn:
+            cursor.execute(sql)
+            res = cursor.fetchall()
+            return [d['number'] for d in res]
+
+    def commented_commits(actor):
+        sql = f'''
+            select p.number
+            from prs p, pr_review_comments prc
+            where p.id = prc.pr_id
+                and prc.creator_id = {actor}
+                and p.base_repo_id = {repo_id}
+                and prc.created_at > "{oldest}"
+                and prc.created_at < "{created_at}"
+        '''
+        with conn:
+            cursor.execute(sql)
+            res = cursor.fetchall()
+            return [d['number'] for d in res]
+
+    linked_integrators = []
+
+    issues_number = commented_issues(creator_id)
+    pulls_number  = commented_commits(creator_id)
+    numbers = set(issues_number + pulls_number)
+
+    if len(numbers) == 0:
+        return {"social_strength":0}
+
+    sql = f'''--sql
+        select user_id
+        from core_members
+        where project_id = {repo_id} 
+            and created_at > "{oldest}"
+            and created_at < "{created_at}"
+    ;'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchall()
+        core_team = list(set([d['user_id'] for d in res]))
+
+    linked_integrators = []
+ 
+    for core_id in core_team:
+        g_issues_number = commented_issues(core_id)
+        g_pulls_number  = commented_commits(core_id)
+        g_numbers = set(g_issues_number + g_pulls_number)
+
+        if(len(numbers & g_numbers) > 0):
+            linked_integrators.append(core_id)
+    core_team_size = len(core_team)
+    return {"social_strength": len(linked_integrators) / core_team_size if core_team_size else 0}
+
 
 def followers(repo_id, pr_id):
     # get user_id in ghtorrent

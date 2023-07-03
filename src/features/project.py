@@ -4,7 +4,20 @@ from dbs.sqlite_base import conn, cursor
 
 from dbs.ghtorrent_base import gh_conn, gh_cursor
 
+# Todo
 def sloc(repo_id, pr_id):
+    pass
+
+# Todo
+def test_cases_per_kloc(repo_id, pr_id):
+    pass
+
+# Todo
+def test_lines_per_kloc(repo_id, pr_id):
+    pass
+
+# Todo
+def asserts_per_kloc(repo_id, pr_id):
     pass
 
 def project_age(repo_id, pr_id):
@@ -78,7 +91,6 @@ def pr_succ_rate(repo_id, pr_id):
                 merge_pr_num += 1
         return {"pr_succ_rate":merge_pr_num/all_pr_num if all_pr_num else 0}
 
-
 def stars(repo_id, pr_id):
     # in zhang's work, it is watcher count
 
@@ -113,9 +125,6 @@ def stars(repo_id, pr_id):
     gh_cursor.execute(sql)
     res = gh_cursor.fetchone()['num_watchers']
     return {"stars" : res}
-
-def test_cases_per_kloc(repo_id, pr_id):
-    pass
 
 def perc_external_contribs(repo_id, pr_id, months_back=3):
     # get pr created_at and creator_id
@@ -256,11 +265,4 @@ def fork_num(repo_id, pr_id):
     gh_cursor.execute(sql)
     res = gh_cursor.fetchone()['num_forks']
     return {"num_forks" : res}
-
-
-def test_lines_per_kloc(repo_id, pr_id):
-    pass
-
-def asserts_per_kloc(repo_id, pr_id):
-    pass
 
