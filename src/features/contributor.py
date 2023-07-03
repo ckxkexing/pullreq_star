@@ -34,7 +34,6 @@ def bot_user(repo_id, pr_id):
             bot = 1
         return {"bot_user" : bot}
 
-
 def first_pr(repo_id, pr_id):
     # see in prev_pullreqs
     pass
@@ -63,6 +62,7 @@ def core_member(repo_id, pr_id, months_back=None):
             flag = 1
         return {"core_member" : flag}
 
+# Todo
 def social_strength(repo_id, pr_id):
     pass
 
@@ -183,16 +183,119 @@ def prior_review_num(repo_id, pr_id):
         res = res['prior_review_num']
         return {"prior_review_num": res}
 
-
-def prior_interaction(repo_id, pr_id):
+def prior_interaction(repo_id, pr_id, months_back=3):
     '''
       :prior_interaction => 
             r_prior_interaction_issue_events + r_prior_interaction_issue_comments +
             r_prior_interaction_pr_events + r_prior_interaction_pr_comments +
             r_prior_interaction_commits + r_prior_interaction_commit_comments,
     '''
-    pass
+    # get pr created_at and creator_id
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        created_at = res['created_at']
+        creator_id = res['creator_id']
 
+    oldest = time_handler(created_at) - relativedelta(months=months_back)
+    oldest = str_handler(oldest)
+
+    def prior_interaction_issue_events():
+        sql = f'''
+            select count(distinct(i.id)) as num_issue_events
+            from issue_events ie, issues i
+            where i.pr_id = 0
+                and ie.actor_id = {creator_id}
+                and i.project_id = {repo_id}
+                and i.id = ie.issue_id
+                and ie.created_at > "{oldest}"
+                and ie.created_at < "{created_at}"
+        '''
+        with conn:
+            cursor.execute(sql)
+            return cursor.fetchone()['num_issue_events']
+
+    def prior_interaction_issue_comments():
+        sql = f'''
+            select count(distinct(i.id)) as num_issue_comments
+            from issue_comments ic, issues i
+            where i.pr_id = 0
+                and ic.creator_id = {creator_id}
+                and i.project_id = {repo_id}
+                and i.id = ic.issue_id
+                and ic.created_at > "{oldest}"
+                and ic.created_at < "{created_at}"
+        '''
+        with conn:
+            cursor.execute(sql)
+            return cursor.fetchone()['num_issue_comments']
+
+    def prior_interaction_pr_events():
+        sql = f'''
+            select count(distinct(i.id)) as count_pr
+            from issue_events ie, issues i
+            where i.pr_id > 0
+                and ie.actor_id = {creator_id}
+                and i.project_id = {repo_id}
+                and i.id = ie.issue_id
+                and ie.created_at > "{oldest}"
+                and ie.created_at < "{created_at}"
+        '''
+        with conn:
+            cursor.execute(sql)
+            return cursor.fetchone()['count_pr']
+
+    def prior_interaction_pr_comments():
+        sql = f'''
+            select count(distinct(i.id)) as num_pr_comments
+            from issue_comments ic, issues i
+            where i.pr_id > 0
+                and ic.creator_id = {creator_id}
+                and i.project_id = {repo_id}
+                and i.id = ic.issue_id
+                and ic.created_at > "{oldest}"
+                and ic.created_at < "{created_at}"
+        '''
+        with conn:
+            cursor.execute(sql)
+            return cursor.fetchone()['num_pr_comments']
+
+
+    def prior_interaction_commits():
+        sql = f'''
+            select count(distinct(c.id)) as num_commits
+            from commits c, project_commits pc
+            where (c.author_id = {creator_id} or c.committer_id = {creator_id})
+                and pc.project_id = {repo_id}
+                and c.id = pc.commit_id
+                and c.created_at > "{oldest}"
+                and c.created_at < "{created_at}"
+        '''
+        with conn:
+            cursor.execute(sql)
+            return cursor.fetchone()['num_commits']
+
+
+    def prior_interaction_commit_comments():
+        sql = f'''
+            select count(distinct(prc.id)) as num_commit_comments
+            from pr_review_comments prc, prs p
+            where prc.pr_id = p.id
+                and prc.creator_id = {creator_id}
+                and p.base_repo_id = {repo_id}
+                and prc.created_at > "{oldest}"
+                and prc.created_at < "{created_at}"
+        '''
+        with conn:
+            cursor.execute(sql)
+            return cursor.fetchone()['num_commit_comments']
+
+    return {"prior_interaction" : 
+                prior_interaction_issue_events() + prior_interaction_issue_comments()
+                + prior_interaction_pr_events()  + prior_interaction_pr_comments()
+                + prior_interaction_commits() + prior_interaction_commit_comments()
+            }
 
 def requester_succ_rate(repo_id, pr_id):
     # get pr created_at and creator_id
