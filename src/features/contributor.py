@@ -1,16 +1,39 @@
+import re
 from dateutil.relativedelta import relativedelta
 from src.utils.utils import time_handler, str_handler
 from dbs.sqlite_base import conn, cursor
 from dbs.ghtorrent_base import gh_conn, gh_cursor
 
 def bot_user(repo_id, pr_id):
-    '''
-       by account type
-       or login name
-       or manual check
-    '''
 
-    pass
+    # get pr created_at and creator_id
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        user_id = res['creator_id']
+
+    sql = f'''select login, type from users where id = {user_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        user_type = res['type']
+        login = res['login']
+        
+        bot = 0
+
+        if user_type == 'Bot':
+            bot = 1 
+
+        patterns = [r'\Wbot\W$', r'\Wbot$', r'\Wrobot$']
+        for pattern in patterns:
+            if re.findall(pattern, login):
+                bot = 1
+
+        if login in ['engine-flutter-autoroll']:
+            bot = 1
+        return {"bot_user" : bot}
+
 
 def first_pr(repo_id, pr_id):
     # see in prev_pullreqs
