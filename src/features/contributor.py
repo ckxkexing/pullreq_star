@@ -7,8 +7,30 @@ def bot_user(repo_id, pr_id):
 def first_pr(repo_id, pr_id):
     pass
 
-def core_member(repo_id, pr_id):
-    pass
+def core_member(repo_id, pr_id, months_back=None):
+    # get pr created_at
+    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        created_at = res['created_at']
+        user_id = res['creator_id']
+
+    sql = f'''--sql
+        select user_id
+        from core_members
+        where project_id = {repo_id} 
+            and created_at < "{created_at}"
+            and user_id = {user_id}
+    ;'''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchall()
+        flag = 0
+        if len(res) > 0:
+            flag = 1
+        return {"core_member" : flag}
+
 
 def social_strength(repo_id, pr_id):
     pass
@@ -48,7 +70,6 @@ def followers(repo_id, pr_id):
     gh_cursor.execute(sql)
     res = gh_cursor.fetchone()['num_followers']
     return {"followers" : res}
-
 
 def prev_pullreqs(repo_id, pr_id):
     pass
