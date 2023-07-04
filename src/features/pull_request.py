@@ -176,3 +176,16 @@ def commits_on_files_touched(repo_id, pr_id):
         res = res['coft'] if res else 0
 
     return {"coft" : res}
+
+def merge_decision(repo_id, pr_id):
+    sql = f'''
+        select merge
+        from pr_merge_decision
+        where pr_id = {pr_id}
+    '''
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        res = res['merge'] if res else 0
+
+    return {'merge_decision': res}

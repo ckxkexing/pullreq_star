@@ -140,7 +140,6 @@ def social_strength(repo_id, pr_id, months_back=3):
     core_team_size = len(core_team)
     return {"social_strength": len(linked_integrators) / core_team_size if core_team_size else 0}
 
-
 def followers(repo_id, pr_id):
     # get user_id in ghtorrent
     sql = f'''

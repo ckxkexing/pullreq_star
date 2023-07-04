@@ -6,17 +6,19 @@ from dbs.ghtorrent_base import gh_conn, gh_cursor
 
 # Todo
 def sloc(repo_id, pr_id):
-    pass
-
-# Todo
-def test_cases_per_kloc(repo_id, pr_id):
+    # src_lines
     pass
 
 # Todo
 def test_lines_per_kloc(repo_id, pr_id):
+    # test_lines / (test_lines + src_lines) * 1000
     pass
 
-# Todo
+# Todo: Gousios found it strongly correlated with test_lines_per_kloc
+def test_cases_per_kloc(repo_id, pr_id):
+    pass
+
+# Todo: Gousios found it strongly correlated with test_lines_per_kloc
 def asserts_per_kloc(repo_id, pr_id):
     pass
 
@@ -34,7 +36,7 @@ def project_age(repo_id, pr_id):
         return {'project_age': 0 if not res else res['project_age']}
 
 def pushed_delta(repo_id, pr_id):
-    # in hours
+    # in mins
 
     previous_sql = f"""--sql
         SELECT created_at
@@ -60,7 +62,7 @@ def pushed_delta(repo_id, pr_id):
         cursor.execute(current_sql)
         res2 = cursor.fetchone()
         current_created_at = time_handler(res2['created_at'])
-        return {"pushed_delta": divmod((current_created_at - previous_created_at).total_seconds(), 3600)[0]}
+        return {"pushed_delta": divmod((current_created_at - previous_created_at).total_seconds(), 60)[0]}
 
 def pr_succ_rate(repo_id, pr_id):
     # pr_before_merged / pr_before
