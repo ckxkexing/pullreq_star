@@ -175,6 +175,31 @@ def description_length(repo_id, pr_id, at_open=True):
     return {"description_length": global_description_length_map[pr_id] if pr_id in global_description_length_map else 0}
 
 
+def description_length_v1(repo_id, pr_id, at_open=True):
+    conn, cursor = get_sqlite_db_connection()
+
+    sql = f'''--sql
+        WITH first_description_changes AS (
+            SELECT pdc.pr_id, pdc.diff, ROW_NUMBER() OVER (PARTITION BY pdc.pr_id ORDER BY pdc.editedAt ASC) AS row_num
+            FROM pr_description_changes pdc
+        ), first_title_changes AS (
+            SELECT ptc.pr_id, ptc.previousTitle, ROW_NUMBER() OVER (PARTITION BY ptc.pr_id ORDER BY ptc.createdAt ASC) AS row_num
+            FROM pr_title_changes ptc
+        ) 
+        select p.id, COALESCE(pdc.diff, p.body) AS first_body, p.body as body,
+                COALESCE(ptc.previousTitle, p.title) AS first_title, p.title as title
+        from prs p 
+        left join first_description_changes pdc on p.id = pdc.pr_id  AND pdc.row_num = 1
+        left join first_title_changes ptc ON p.id = ptc.pr_id AND ptc.row_num = 1
+        where p.base_repo_id = {repo_id} and p.id = {pr_id};
+    '''
+    with conn:
+        cursor.execute(sql)
+        pr = cursor.fetchone()
+        res =  len(pr['first_body']) if pr['first_body'] else 0
+    return {"description_length": res}
+
+
 def commits_on_files_touched(repo_id, pr_id):
     conn, cursor = get_sqlite_db_connection()
     sql = '''

@@ -29,6 +29,8 @@ def bot_user(repo_id, pr_id):
 
         patterns = [r'\Wbot\W$', r'\Wbot$', r'\Wrobot$']
         for pattern in patterns:
+            if bot == 1:
+                break
             if re.findall(pattern, login):
                 bot = 1
 
@@ -221,22 +223,25 @@ def contrib_perc_commit(repo_id, pr_id):
 
     # get github commit author list
     sql = f'''
-        select author_id
+        select author_id, count(distinct(c.id)) as cnt
         from project_commits pc, commits c
         where pc.commit_id = c.id
-            and created_at < "{created_at}"
+            and c.created_at < "{created_at}"
             and pc.project_id = {repo_id}
+        GROUP BY author_id;
     '''
     with conn:
         cursor.execute(sql)
         res = cursor.fetchall()
-        committer_numbers = [u['author_id'] for u in res]
+        committer_numbers = [(u['author_id'], u['cnt'])for u in res]
 
-    all_commit_num = len(committer_numbers)
+
+    all_commit_num = 0
     contrib_commit_num = 0
-    for u in committer_numbers:
+    for u, c in committer_numbers:
+        all_commit_num += c
         if u == creator_id:
-            contrib_commit_num += 1
+            contrib_commit_num = c
 
     return {"contrib_perc_commit" : contrib_commit_num / all_commit_num if all_commit_num else 0}
 
@@ -252,14 +257,14 @@ def prior_review_num(repo_id, pr_id):
         user_id = res['creator_id']
 
     sql = f'''
-        select count(a.id) as prior_review_num
+        select count(distinct(a.id)) as prior_review_num
         from (
             select p.id, i.id as issue_id
             from prs p  
             join issues i on p.id = i.pr_id
             where p.base_repo_id = {repo_id} 
                 and p.closed_at < '{created_at}'
-                and p.created_at != {user_id}
+                and p.creator_id != {user_id}
         ) a 
         join issue_events ie on
         a.issue_id = ie.issue_id and (ie.event = 'merged' or ie.event = 'closed')
@@ -398,21 +403,24 @@ def requester_succ_rate(repo_id, pr_id):
         user_id = res['creator_id']
 
     sql = f'''
-        select p.id, pmd.merge
+        select pmd.merge as merge, count(p.id) as cnt
         from prs p
         left join pr_merge_decision pmd
         on p.id = pmd.pr_id
         where p.closed_at < "{created_at}"
             and p.creator_id = {user_id}
             and p.base_repo_id = {repo_id}
+        GROUP BY pmd.merge;
     '''
 
     with conn:
         cursor.execute(sql)
         res = cursor.fetchall()
-        all_pr_num = len(res)
+        all_pr_num = 0
         merge_pr_num = 0
-        for pr in res:
-            if pr['merge'] > 0:
-                merge_pr_num += 1
+        for status in res:
+            all_pr_num += status['cnt']
+            if status['merge'] > 0:
+                merge_pr_num += status['cnt']
+
         return {"requester_succ_rate":merge_pr_num/all_pr_num if all_pr_num else 0}

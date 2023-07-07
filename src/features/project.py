@@ -44,7 +44,7 @@ def pushed_delta(repo_id, pr_id):
     previous_sql = f"""--sql
         SELECT created_at
         FROM prs
-        WHERE prs.base_repo_id={repo_id}  and created_at < (SELECT created_at FROM prs WHERE id = {pr_id})
+        WHERE prs.base_repo_id={repo_id} and created_at < (SELECT created_at FROM prs WHERE id = {pr_id})
         ORDER BY created_at DESC
         LIMIT 1;
     """
@@ -79,22 +79,24 @@ def pr_succ_rate(repo_id, pr_id):
         created_at = res['created_at']
 
     sql = f'''
-        select p.id, pmd.merge
+        select pmd.merge, count(p.id) as cnt
         from prs p
         left join pr_merge_decision pmd
         on p.id = pmd.pr_id
         where p.closed_at < "{created_at}"
             and p.base_repo_id = {repo_id}
+        GROUP BY pmd.merge
     '''
 
     with conn:
         cursor.execute(sql)
         res = cursor.fetchall()
-        all_pr_num = len(res)
+        all_pr_num = 0
         merge_pr_num = 0
-        for pr in res:
-            if pr['merge'] > 0:
-                merge_pr_num += 1
+        for status in res:
+            all_pr_num += status['cnt']
+            if status['merge'] > 0:
+                merge_pr_num += status['cnt']
         return {"pr_succ_rate":merge_pr_num/all_pr_num if all_pr_num else 0}
 
 def stars(repo_id, pr_id):
@@ -124,8 +126,9 @@ def stars(repo_id, pr_id):
         created_at = cursor.fetchone()['created_at']
 
     # get watcher count
+    # add index on created_at and repo_id
     sql = f'''
-        select count(w.user_id) as num_watchers
+        select count(distinct(w.user_id)) as num_watchers
         from reduced_watchers w
         where w.created_at < '{created_at}'
             and w.repo_id = {id}
@@ -153,7 +156,7 @@ def perc_external_contribs(repo_id, pr_id, months_back=3):
         from core_members c
         where project_id = {repo_id}
             and created_at < "{created_at}"
-            and created_at >= "{oldest}"   
+            and created_at > "{oldest}"   
     '''
     with conn:
         cursor.execute(sql)
@@ -162,23 +165,25 @@ def perc_external_contribs(repo_id, pr_id, months_back=3):
     core_numbers = set(core_numbers)
     # get github commit author list
     sql = f'''
-        select author_id
+        select author_id, count(distinct(c.id)) as cnt
         from project_commits pc, commits c
         where pc.commit_id = c.id
             and created_at < "{created_at}"
-            and created_at >= "{oldest}" 
+            and created_at > "{oldest}" 
             and pc.project_id = {repo_id}
+        GROUP BY author_id;
     '''
     with conn:
         cursor.execute(sql)
         res = cursor.fetchall()
-        committer_numbers = [u['author_id'] for u in res]
+        committer_numbers = [(u['author_id'], u['cnt']) for u in res]
 
-    all_commit_num = len(committer_numbers)
+    all_commit_num = 0
     external_commit_num = 0
-    for u in committer_numbers:
+    for u, c in committer_numbers:
+        all_commit_num += c
         if u not in core_numbers:
-            external_commit_num += 1
+            external_commit_num += c
 
     return {"perc_external_contribs" : external_commit_num / all_commit_num if all_commit_num else 0}
 
@@ -201,7 +206,7 @@ def team_size(repo_id, pr_id, months_back=3):
         from core_members c
         where project_id = {repo_id}
             and created_at < "{created_at}"
-            and created_at >= "{oldest}"
+            and created_at > "{oldest}"
     '''
     with conn:
         cursor.execute(sql)
@@ -219,7 +224,7 @@ def open_issue_num(repo_id, pr_id):
             issues
         WHERE
             issues.project_id = ? AND
-            issues.pr_id = 0
+            issues.pr_id = 0    -- not a pr 
     ;
     '''
     with conn:

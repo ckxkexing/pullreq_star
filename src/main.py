@@ -1,6 +1,7 @@
 import sys
 import json
 import yaml
+import time
 import random
 import argparse
 import importlib
@@ -11,7 +12,7 @@ from config.configs import repos
 import threading
 import queue
 
-THREADNUM = 32
+THREADNUM = 8
 
 # the thread for processing each project
 class handleThread(threading.Thread):
@@ -39,8 +40,6 @@ class handleThread(threading.Thread):
         while True:
             try:
                 pr = self.q.get(timeout=0)
-                print(self.q.qsize())
-
                 for i, pr in enumerate(prs):
                     for feature_func, function_name in self.hook_functions:
                         # exec feature_func
@@ -56,16 +55,22 @@ class handleThread(threading.Thread):
 # loger 
 def output_logger(queue):
     cnt = 0
+    finished = 0
     while True:
-        # get a unit of work
-        item = queue.get()
-        # check for stop
-        if item is None:
-            cnt += 1
-            if cnt >= THREADNUM:
-                break
+        time.sleep(5)
+
+        items = [queue.get() for _ in range(queue.qsize())]
+
         with open(args.output_file, "a") as f:
-            f.write(json.dumps(item) + "\n")
+            for item in items:
+                if item is None:
+                    cnt += 1
+                else:
+                    finished += 1
+                    f.write(json.dumps(item) + "\n")
+        print("finished count = ", finished)
+        if cnt >= THREADNUM:
+            break
     print('output logger: Done')
 
 
@@ -96,6 +101,7 @@ if __name__ == "__main__":
             tasks.put(pr)
 
         output_logger = threading.Thread(target=output_logger, args=(out_q,))
+        output_logger.daemon = True
         output_logger.start() 
         for _ in range(THREADNUM):
             t = handleThread(tasks, out_q)
