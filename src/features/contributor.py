@@ -1,11 +1,12 @@
 import re
 from dateutil.relativedelta import relativedelta
 from src.utils.utils import time_handler, str_handler
-from dbs.sqlite_base import conn, cursor
-from dbs.ghtorrent_base import gh_conn, gh_cursor
+from dbs.sqlite_base import get_sqlite_db_connection
+from dbs.ghtorrent_base import get_mysql_db_connection
 
 
 def bot_user(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
 
     # get pr created_at and creator_id
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
@@ -40,6 +41,8 @@ def first_pr(repo_id, pr_id):
     pass
 
 def core_member(repo_id, pr_id, months_back=None):
+    conn, cursor = get_sqlite_db_connection()
+
     # get pr created_at and creator_id
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
     with conn:
@@ -64,6 +67,7 @@ def core_member(repo_id, pr_id, months_back=None):
         return {"core_member" : flag}
 
 def social_strength(repo_id, pr_id, months_back=3):
+    conn, cursor = get_sqlite_db_connection()
 
     # get pr created_at and creator_id
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
@@ -141,6 +145,9 @@ def social_strength(repo_id, pr_id, months_back=3):
     return {"social_strength": len(linked_integrators) / core_team_size if core_team_size else 0}
 
 def followers(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+    gh_conn, gh_cursor = get_mysql_db_connection()
+
     # get user_id in ghtorrent
     sql = f'''
         select p.creator_id , u.login 
@@ -177,6 +184,8 @@ def followers(repo_id, pr_id):
     return {"followers" : res}
 
 def prev_pullreqs(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+
     # get pr created_at and creator_id
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
     with conn:
@@ -198,6 +207,8 @@ def prev_pullreqs(repo_id, pr_id):
         return {"prev_pullreqs" : res, "first_pr" : first_pr}
 
 def contrib_perc_commit(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+
     # % of previous contributor’s commit
 
     # get pr created_at and creator_id
@@ -230,6 +241,8 @@ def contrib_perc_commit(repo_id, pr_id):
     return {"contrib_perc_commit" : contrib_commit_num / all_commit_num if all_commit_num else 0}
 
 def prior_review_num(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+
     # get pr created_at and creator_id
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
     with conn:
@@ -258,12 +271,14 @@ def prior_review_num(repo_id, pr_id):
         return {"prior_review_num": res}
 
 def prior_interaction(repo_id, pr_id, months_back=3):
+
     '''
       :prior_interaction => 
             r_prior_interaction_issue_events + r_prior_interaction_issue_comments +
             r_prior_interaction_pr_events + r_prior_interaction_pr_comments +
             r_prior_interaction_commits + r_prior_interaction_commit_comments,
     '''
+    conn, cursor = get_sqlite_db_connection()
     # get pr created_at and creator_id
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
     with conn:
@@ -372,6 +387,8 @@ def prior_interaction(repo_id, pr_id, months_back=3):
             }
 
 def requester_succ_rate(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+
     # get pr created_at and creator_id
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
     with conn:

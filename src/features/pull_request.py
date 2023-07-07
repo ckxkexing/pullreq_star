@@ -1,9 +1,12 @@
 import re
 import json
-from dbs.sqlite_base import conn, cursor
+import threading
+from dbs.sqlite_base import get_sqlite_db_connection
 from src.utils.languages import *
 
+
 def num_commits(repo_id, pr_id, at_open=True):
+    conn, cursor = get_sqlite_db_connection()
     sql = f'''--sql
         select prs.id, prs.url, prs.html_url, count(prs.created_at >= c.created_at ) as before_commit_cnt
             from prs 
@@ -20,6 +23,7 @@ def num_commits(repo_id, pr_id, at_open=True):
         return {"num_commits": 0 if not res else res['before_commit_cnt']}
 
 def files_level(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
     # [files_changed, files_modified, files_added, files_deleted]
     sql = f'''--sql
         select cd.files 
@@ -38,6 +42,7 @@ def files_level(repo_id, pr_id):
         files_modified, files_added, files_deleted = 0, 0, 0
         for files in res:
             files = files['files']
+            if files is None: continue
             files = json.loads(files)
             for file in files:
                 # https://stackoverflow.com/a/72849078
@@ -60,6 +65,7 @@ test_churn      : test lines add + test lines deleted
 src_churn       : non-test lines add + non-test lines deleted
 '''
 def churn_level(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
     # [churn_addition, churn_deletion, test_churn, src_churn, test_inclusion]
     lang_sql = f'''--sql
         select lang 
@@ -133,11 +139,14 @@ def churn_level(repo_id, pr_id):
                 "test_inclusion": test_inclusion 
                 }
 
-
-global_description_length_map = {}
 global_description_length_ssid = 0
+global_description_length_map = {}
+LOCK = threading.Lock()
 def description_length(repo_id, pr_id, at_open=True):
+    conn, cursor = get_sqlite_db_connection()
+
     global global_description_length_ssid, global_description_length_map
+
     sql = f'''--sql
         WITH first_description_changes AS (
             SELECT pdc.pr_id, pdc.diff, ROW_NUMBER() OVER (PARTITION BY pdc.pr_id ORDER BY pdc.editedAt ASC) AS row_num
@@ -153,6 +162,7 @@ def description_length(repo_id, pr_id, at_open=True):
         left join first_title_changes ptc ON p.id = ptc.pr_id AND ptc.row_num = 1
         where p.base_repo_id = {repo_id};
     '''
+    LOCK.acquire()
     if global_description_length_ssid != repo_id:
         with conn:
             cursor.execute(sql)
@@ -160,10 +170,13 @@ def description_length(repo_id, pr_id, at_open=True):
             global_description_length_ssid = repo_id
             for pr in res:
                 global_description_length_map[pr['id']] = len(pr['first_body']) if pr['first_body'] else 0
+    LOCK.release()
+
     return {"description_length": global_description_length_map[pr_id] if pr_id in global_description_length_map else 0}
 
 
 def commits_on_files_touched(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
     sql = '''
         select coft 
         from pr_commits_of_file_touched
@@ -178,6 +191,7 @@ def commits_on_files_touched(repo_id, pr_id):
     return {"coft" : res}
 
 def merge_decision(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
     sql = f'''
         select merge
         from pr_merge_decision

@@ -1,8 +1,7 @@
 from dateutil.relativedelta import relativedelta
 from src.utils.utils import time_handler, str_handler
-from dbs.sqlite_base import conn, cursor
-
-from dbs.ghtorrent_base import gh_conn, gh_cursor
+from dbs.sqlite_base import get_sqlite_db_connection
+from dbs.ghtorrent_base import get_mysql_db_connection
 
 # Todo
 def sloc(repo_id, pr_id):
@@ -23,6 +22,8 @@ def asserts_per_kloc(repo_id, pr_id):
     pass
 
 def project_age(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+
     sql = f'''--sql
         select (strftime('%Y', prs.created_at) - STRFTIME('%Y', p.created_at)) * 12 + strftime('%m', prs.created_at) - STRFTIME('%m', p.created_at) AS project_age
         from prs 
@@ -37,6 +38,8 @@ def project_age(repo_id, pr_id):
 
 def pushed_delta(repo_id, pr_id):
     # in mins
+
+    conn, cursor = get_sqlite_db_connection()
 
     previous_sql = f"""--sql
         SELECT created_at
@@ -66,6 +69,7 @@ def pushed_delta(repo_id, pr_id):
 
 def pr_succ_rate(repo_id, pr_id):
     # pr_before_merged / pr_before
+    conn, cursor = get_sqlite_db_connection()
 
     # get pr created_at 
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
@@ -95,6 +99,8 @@ def pr_succ_rate(repo_id, pr_id):
 
 def stars(repo_id, pr_id):
     # in zhang's work, it is watcher count
+    conn, cursor = get_sqlite_db_connection()
+    gh_conn, gh_cursor = get_mysql_db_connection()
 
     # get full name
     sql = f'''select full_name from projects where id = {repo_id}'''
@@ -130,6 +136,8 @@ def stars(repo_id, pr_id):
 
 def perc_external_contribs(repo_id, pr_id, months_back=3):
     # get pr created_at and creator_id
+    conn, cursor = get_sqlite_db_connection()
+
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
     with conn:
         cursor.execute(sql)
@@ -176,6 +184,8 @@ def perc_external_contribs(repo_id, pr_id, months_back=3):
 
 def team_size(repo_id, pr_id, months_back=3):
     # get pr created_at and creator_id
+    conn, cursor = get_sqlite_db_connection()
+
     sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
     with conn:
         cursor.execute(sql)
@@ -199,6 +209,8 @@ def team_size(repo_id, pr_id, months_back=3):
         return {"team_size": res['team_size']}
 
 def open_issue_num(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+
     sql = '''--sql
         SELECT
             SUM(CASE WHEN issues.created_at < (SELECT created_at FROM prs WHERE id = ?) THEN 1 ELSE 0 END) AS opened_num,
@@ -218,6 +230,8 @@ def open_issue_num(repo_id, pr_id):
         return {"open_issue_num": opened_num - closed_num}
 
 def open_pr_num(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+
     sql = '''--sql
         SELECT
             SUM(CASE WHEN issues.created_at < (SELECT created_at FROM prs WHERE id = ?) THEN 1 ELSE 0 END) AS opened_num,
@@ -237,6 +251,9 @@ def open_pr_num(repo_id, pr_id):
         return {"open_pr_num": opened_num - closed_num}
 
 def fork_num(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+    gh_conn, gh_cursor = get_mysql_db_connection()
+
     # get full name
     sql = f'''select full_name from projects where id = {repo_id}'''
     with conn:
