@@ -11,13 +11,14 @@ from config.configs import repos
 import threading
 import queue
 
-THREADNUM = 2
+THREADNUM = 32
 
 # the thread for processing each project
 class handleThread(threading.Thread):
-    def __init__(self, q):
+    def __init__(self, q, out_q):
         threading.Thread.__init__(self)
         self.q = q
+        self.out_q = out_q
         self.hook_functions = self.register_hooks(config)
         random.shuffle(self.hook_functions)
 
@@ -45,14 +46,28 @@ class handleThread(threading.Thread):
                         # exec feature_func
                         pr_id = pr['id']
                         prs[i].update(self.run_with_pr_id(feature_func, repo_id, pr_id))
-
-                    # with open(args.output_file, "a") as f:
-                    #     f.write(json.dumps(prs[i]) + "\n")
-                    print(prs[i])
+                    self.out_q.put(prs[i])
 
             except queue.Empty:
+                self.out_q.put(None)
+                self.q.task_done()
                 return
-            self.q.task_done()
+
+# loger 
+def output_logger(queue):
+    cnt = 0
+    while True:
+        # get a unit of work
+        item = queue.get()
+        # check for stop
+        if item is None:
+            cnt += 1
+            if cnt >= THREADNUM:
+                break
+        with open(args.output_file, "a") as f:
+            f.write(json.dumps(item) + "\n")
+    print('output logger: Done')
+
 
 if __name__ == "__main__":
     # feature config
@@ -62,7 +77,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-o', dest='output_file')
     args = parser.parse_args()
-
 
     for owner, repo, lang in repos:
 
@@ -76,14 +90,19 @@ if __name__ == "__main__":
         prs = list_pr(repo_id)
 
         tasks = queue.Queue()
+        out_q = queue.Queue()
 
         for pr in prs:
             tasks.put(pr)
 
+        output_logger = threading.Thread(target=output_logger, args=(out_q,))
+        output_logger.start() 
         for _ in range(THREADNUM):
-            t = handleThread(tasks)
+            t = handleThread(tasks, out_q)
             t.daemon = True
             t.start()
+
         tasks.join()
+        output_logger.join()
 
         print("finish")
