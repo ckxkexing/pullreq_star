@@ -40,12 +40,12 @@ class handleThread(threading.Thread):
         while True:
             try:
                 pr = self.q.get(timeout=0)
-                for i, pr in enumerate(prs):
-                    for feature_func, function_name in self.hook_functions:
-                        # exec feature_func
-                        pr_id = pr['id']
-                        prs[i].update(self.run_with_pr_id(feature_func, repo_id, pr_id))
-                    self.out_q.put(prs[i])
+
+                for feature_func, function_name in self.hook_functions:
+                    # exec feature_func
+                    pr_id = pr['id']
+                    pr.update(self.run_with_pr_id(feature_func, repo_id, pr_id))
+                self.out_q.put(pr)
 
             except queue.Empty:
                 self.out_q.put(None)
@@ -84,9 +84,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     for owner, repo, lang in repos:
-
-        if owner != "flutter":
-            continue
 
         print(f"{owner} / {repo}")
 
