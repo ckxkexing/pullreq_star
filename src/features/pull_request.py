@@ -120,6 +120,7 @@ def churn_level(repo_id, pr_id):
 
         for files in res:
             files = files['files']
+            if files is None: continue
             files = json.loads(files)
             for file in files:
                 if linguist.src_file_filter(file['filename']):

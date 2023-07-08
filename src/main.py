@@ -40,19 +40,18 @@ class handleThread(threading.Thread):
         while True:
             try:
                 pr = self.q.get(timeout=0)
-
                 for feature_func, function_name in self.hook_functions:
                     # exec feature_func
                     pr_id = pr['id']
                     pr.update(self.run_with_pr_id(feature_func, repo_id, pr_id))
-                self.out_q.put(pr)
-
             except queue.Empty:
-                self.out_q.put(None)
+                break
+            finally:
+                self.out_q.put(pr)
                 self.q.task_done()
-                return
+        self.out_q.put(None)
 
-# loger 
+# logger 
 def output_logger(queue):
     cnt = 0
     finished = 0
@@ -97,15 +96,16 @@ if __name__ == "__main__":
         for pr in prs:
             tasks.put(pr)
 
-        output_logger = threading.Thread(target=output_logger, args=(out_q,))
-        output_logger.daemon = True
-        output_logger.start() 
+        output = threading.Thread(target=output_logger, args=(out_q,))
+        output.daemon = True
+        output.start() 
+
         for _ in range(THREADNUM):
             t = handleThread(tasks, out_q)
             t.daemon = True
             t.start()
 
+        output.join()
         tasks.join()
-        output_logger.join()
 
         print("finish")
