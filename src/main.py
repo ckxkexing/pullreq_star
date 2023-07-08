@@ -40,12 +40,13 @@ class handleThread(threading.Thread):
         while True:
             try:
                 pr = self.q.get(timeout=0)
+            except queue.Empty:
+                break
+            try:
                 for feature_func, function_name in self.hook_functions:
                     # exec feature_func
                     pr_id = pr['id']
                     pr.update(self.run_with_pr_id(feature_func, repo_id, pr_id))
-            except queue.Empty:
-                break
             finally:
                 self.out_q.put(pr)
                 self.q.task_done()
