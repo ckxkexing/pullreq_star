@@ -230,8 +230,8 @@ def open_issue_num(repo_id, pr_id):
     with conn:
         cursor.execute(sql, (pr_id, pr_id, repo_id))
         result = cursor.fetchone()
-        opened_num = result['opened_num']
-        closed_num = result['closed_num']
+        opened_num = result['opened_num'] if result['opened_num'] else 0
+        closed_num = result['closed_num'] if result['closed_num'] else 0
         return {"open_issue_num": opened_num - closed_num}
 
 def open_pr_num(repo_id, pr_id):
@@ -251,8 +251,9 @@ def open_pr_num(repo_id, pr_id):
     with conn:
         cursor.execute(sql, (pr_id, pr_id, repo_id))
         result = cursor.fetchone()
-        opened_num = result['opened_num']
-        closed_num = result['closed_num']
+
+        opened_num = result['opened_num'] if result['opened_num'] else 0
+        closed_num = result['closed_num'] if result['closed_num'] else 0
         return {"open_pr_num": opened_num - closed_num}
 
 def fork_num(repo_id, pr_id):
