@@ -96,7 +96,7 @@ def churn_level(repo_id, pr_id):
     elif re.match("shell", lang, re.I):
         linguist = ShellData()
     elif re.match("typescript", lang, re.I):
-        linguist = typescript()
+        linguist = TypescriptData()
     elif re.match("c", lang, re.I):
         linguist = CCData()
 
