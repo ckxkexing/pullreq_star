@@ -108,10 +108,11 @@ def get_pr_diff(pr):
                         adds = []
                         continue
 
-                    if line.startswith('+'):
+                    if line.startswith('+') and len(line) < 1000:
                         adds += linguist.tokenize(line[1:]) 
-                    if line.startswith('-'):
+                    if line.startswith('-') and len(line) < 1000:
                         rms += linguist.tokenize(line[1:])
+
                 if len(rms) > 0 or len(adds) > 0:
                     sim = similarity(rms, adds)
                     if sim < 1:
@@ -135,7 +136,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     for owner, repo, lang in repos:
-        if owner == 'atom':
+        if owner != 'mrdoob':
             continue
         print(f"{owner} / {repo}")
         repo_id = get_project_by_full_name(f"{owner}/{repo}")
