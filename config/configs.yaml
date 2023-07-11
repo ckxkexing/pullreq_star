@@ -10,6 +10,12 @@ mysql:
   db: "ghtorrent_restore_2021"
 
 
+mongodb:
+  host: "127.0.0.1"
+  port: 27017
+  db: "ePR"
+
+
 raw_data: "/data1/kexingchen/star_50"
 repo_dir: "/data1/kexingchen/star_50/clone_star_50_projects"
 

@@ -1,6 +1,6 @@
 import yaml
 f = open("config/configs.yaml", "r")
-config = yaml.load(f.read(), Loader=yaml.BaseLoader)
+config = yaml.load(f.read(), Loader=yaml.SafeLoader)
 
 repos = []
 with open("project_list.txt", "r") as f:

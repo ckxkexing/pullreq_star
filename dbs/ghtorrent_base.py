@@ -8,7 +8,7 @@ from config.configs import config
 
 config = config['mysql']
 host = config['host']
-port = int(config['port'])
+port = config['port']
 db = config['db']
 user = config['user']
 password = config['passwd']
