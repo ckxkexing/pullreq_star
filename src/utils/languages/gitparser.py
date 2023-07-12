@@ -80,6 +80,9 @@ def message_cleaner(message):
     for line in msg.splitlines():
         if line.startswith("- [ ]"):
             continue
+        pattern = r'^(#+) (.*)'
+        if re.search(pattern, line):
+            continue
         lines.append(line)
     msg = "\n".join(lines)
 
@@ -97,7 +100,13 @@ def message_cleaner(message):
     msg = re.sub(r"\[(.+?)\]\(.+?\)", r"\1", msg)
     msg = re.sub(r"https?:\S+", "", msg)
      
-    msg = " ".join(msg.split())
+    lines = []
+    for line in msg.splitlines():
+        lin = line.strip()
+        if not lin:
+            continue
+        lines.append(line)
+    msg = "\n".join(lines)
     msg = re.sub(r"(\(|\[|\{|\<)#([0-9])+(\)|\]|\}|\>)", "", msg)
     msg = re.sub(r"#([0-9])+", "gh-url", msg)
     msg = re.sub(r"([0-9])+", "", msg)
