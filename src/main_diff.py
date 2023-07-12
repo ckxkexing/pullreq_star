@@ -36,8 +36,8 @@ def get_linguist(filename):
         linguist = PhpData()
     elif lang == 'rb':
         linguist = RubyData()
-    elif lang == 'sass':
-        linguist = SassData()
+    # elif lang == 'sass':
+    #     linguist = SassData()
     # elif lang == 'sh':
     #     linguist = ShellData()
     elif lang == 'ts':
@@ -136,18 +136,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     for owner, repo, lang in repos:
-        if owner != 'mrdoob':
-            continue
         print(f"{owner} / {repo}")
         repo_id = get_project_by_full_name(f"{owner}/{repo}")
         prs = list_pr(repo_id)
-        cnt = 0
         for pr in tqdm(prs):
             # if pr['number'] != 22543:
             #     continue
             diff_rm, diff_add = get_pr_diff(pr)
             if diff_rm == "" and diff_add == "":
-                cnt += 1
                 continue
             pr['code_add'] = diff_add
             pr['code_del'] = diff_rm
