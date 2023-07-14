@@ -1,5 +1,4 @@
 import re
-import json
 import argparse
 from tqdm import tqdm
 from config.configs import config
@@ -13,6 +12,7 @@ from src.utils.languages.gitparser import message_cleaner
 description_map = {}
 def load_pr_desc(repo_id):
     conn, cursor = get_sqlite_db_connection()
+    # Get first most Pull Request Content
     sql = f'''--sql
         WITH first_description_changes AS (
             SELECT pdc.pr_id, pdc.diff, ROW_NUMBER() OVER (PARTITION BY pdc.pr_id ORDER BY pdc.editedAt ASC) AS row_num

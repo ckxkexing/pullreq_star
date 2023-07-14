@@ -1,10 +1,10 @@
 import sys
-import json
 import yaml
 import time
 import random
 import argparse
 import importlib
+from dbs.mongo_base import mongo_db
 from dbs.tables.prs import list_pr
 from dbs.tables.projects import get_project_by_full_name
 from config.configs import repos
@@ -56,18 +56,20 @@ class handleThread(threading.Thread):
 def output_logger(queue):
     cnt = 0
     finished = 0
+    col = mongo_db['features']
+
     while True:
         time.sleep(5)
 
         items = [queue.get() for _ in range(queue.qsize())]
 
-        with open(args.output_file, "a") as f:
-            for item in items:
-                if item is None:
-                    cnt += 1
-                else:
-                    finished += 1
-                    f.write(json.dumps(item) + "\n")
+        for item in items:
+            if item is None:
+                cnt += 1
+            else:
+                finished += 1
+                key = {"id" : pr['id']}
+                col.update_one(key, {"$set":item}, upsert=True)
         print("finished count = ", finished)
         if cnt >= THREADNUM:
             break

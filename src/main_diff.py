@@ -1,5 +1,4 @@
 import argparse
-import json
 import re
 from config.configs import config
 from config.configs import repos
@@ -14,6 +13,8 @@ import Levenshtein
 from transformers import RobertaTokenizer
 
 from tqdm import tqdm
+
+from dbs.mongo_base import mongo_db
 
 tokenizer = RobertaTokenizer.from_pretrained("/data1/kexingchen/huggingface_models/microsoft_codebert-base")   
 max_source_length = 256
@@ -130,6 +131,7 @@ def get_pr_diff(pr):
     return diff_rm, diff_add
 
 if __name__ == "__main__":
+    col = mongo_db['features']
 
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-o', dest='output_file')
@@ -147,5 +149,5 @@ if __name__ == "__main__":
                 continue
             pr['code_add'] = diff_add
             pr['code_del'] = diff_rm
-            with open(args.output_file, "a") as f:
-                f.write(json.dumps(pr) + "\n")
+            key = {"id" : pr['id']}
+            col.update_one(key, {"$set":pr}, upsert=True)
