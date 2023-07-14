@@ -68,7 +68,7 @@ def output_logger(queue):
                 cnt += 1
             else:
                 finished += 1
-                key = {"id" : pr['id']}
+                key = {"id" : item['id']}
                 col.update_one(key, {"$set":item}, upsert=True)
         print("finished count = ", finished)
         if cnt >= THREADNUM:
