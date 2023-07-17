@@ -97,8 +97,12 @@ def churn_level(repo_id, pr_id):
         linguist = ShellData()
     elif re.match("typescript", lang, re.I):
         linguist = TypescriptData()
-    elif re.match("c", lang, re.I):
-        linguist = CCData()
+    elif lang == 'c':
+        linguist = CData()
+    elif lang == 'cu':
+        linguist = CUData()
+    elif lang == 'cpp':
+        linguist = CPPData()
 
     sql = f'''--sql
         select cd.files 

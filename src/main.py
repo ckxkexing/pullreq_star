@@ -2,6 +2,7 @@ import sys
 import yaml
 import time
 import random
+import pymongo
 import argparse
 import importlib
 from dbs.mongo_base import mongo_db
@@ -63,13 +64,17 @@ def output_logger(queue):
 
         items = [queue.get() for _ in range(queue.qsize())]
 
+        ops = []
         for item in items:
             if item is None:
                 cnt += 1
             else:
                 finished += 1
                 key = {"id" : item['id']}
-                col.update_one(key, {"$set":item}, upsert=True)
+                ops.append((pymongo.UpdateOne(key, {"$set":item}, upsert=True)))
+        if(len(ops) > 0) :
+            col.bulk_write(ops, ordered=False)
+            ops = []
         print("finished count = ", finished)
         if cnt >= THREADNUM:
             break
