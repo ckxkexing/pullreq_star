@@ -144,77 +144,18 @@ def churn_level(repo_id, pr_id):
                 "test_inclusion": test_inclusion 
                 }
 
-# Find at_mention in text
-# Num of @uname mentions in the description(title doesn't take effect)
-# Modelling the results of: An Exploratory Study of @-mention in GitHub's Pull-requests
-# DOI: 10.1109/APSEC.2014.58
-def at_mentions_in_description(body):
-    count = len(re.findall(r'@(?!\-)([a-zA-Z0-9\-]+)(?<!\-)', re.sub(r'`.*?`', '', re.sub(r'[\w]*@[\w]+\.[\w]+', '', body))))
-    return count
 
-global_description_length_ssid = 0
-global_description_length_map = {}
-global_description_at_mention_map = {}
-LOCK = threading.Lock()
 def description_length(repo_id, pr_id, at_open=True):
     conn, cursor = get_sqlite_db_connection()
 
-    global global_description_length_ssid, global_description_length_map
-
     sql = f'''--sql
-        WITH first_description_changes AS (
-            SELECT pdc.pr_id, pdc.diff, ROW_NUMBER() OVER (PARTITION BY pdc.pr_id ORDER BY pdc.editedAt ASC) AS row_num
-            FROM pr_description_changes pdc
-        ), first_title_changes AS (
-            SELECT ptc.pr_id, ptc.previousTitle, ROW_NUMBER() OVER (PARTITION BY ptc.pr_id ORDER BY ptc.createdAt ASC) AS row_num
-            FROM pr_title_changes ptc
-        ) 
-        select p.id, COALESCE(pdc.diff, p.body) AS first_body, p.body as body,
-                COALESCE(ptc.previousTitle, p.title) AS first_title, p.title as title
-        from prs p 
-        left join first_description_changes pdc on p.id = pdc.pr_id  AND pdc.row_num = 1
-        left join first_title_changes ptc ON p.id = ptc.pr_id AND ptc.row_num = 1
-        where p.base_repo_id = {repo_id};
+        select body
+        from pr_description_first_version
+        where pr_id = {pr_id};
     '''
-    LOCK.acquire()
-    if global_description_length_ssid != repo_id:
-        with conn:
-            cursor.execute(sql)
-            res = cursor.fetchall()
-            global_description_length_ssid = repo_id
-            for pr in res:
-                global_description_length_map[pr['id']] = len(pr['first_body']) if pr['first_body'] else 0
-                global_description_at_mention_map[pr['id']] = at_mentions_in_description(pr['first_body']) if pr['first_body'] else 0
-
-    LOCK.release()
-
-    return {"description_length": global_description_length_map[pr_id] if pr_id in global_description_length_map else 0,
-            "at_mentions_in_description": global_description_at_mention_map[pr_id] if pr_id in global_description_at_mention_map else 0}
-
-
-def description_length_v1(repo_id, pr_id, at_open=True):
-    conn, cursor = get_sqlite_db_connection()
-
-    sql = f'''--sql
-        WITH first_description_changes AS (
-            SELECT pdc.pr_id, pdc.diff, ROW_NUMBER() OVER (PARTITION BY pdc.pr_id ORDER BY pdc.editedAt ASC) AS row_num
-            FROM pr_description_changes pdc
-        ), first_title_changes AS (
-            SELECT ptc.pr_id, ptc.previousTitle, ROW_NUMBER() OVER (PARTITION BY ptc.pr_id ORDER BY ptc.createdAt ASC) AS row_num
-            FROM pr_title_changes ptc
-        ) 
-        select p.id, COALESCE(pdc.diff, p.body) AS first_body, p.body as body,
-                COALESCE(ptc.previousTitle, p.title) AS first_title, p.title as title
-        from prs p 
-        left join first_description_changes pdc on p.id = pdc.pr_id  AND pdc.row_num = 1
-        left join first_title_changes ptc ON p.id = ptc.pr_id AND ptc.row_num = 1
-        where p.base_repo_id = {repo_id} and p.id = {pr_id};
-    '''
-    with conn:
-        cursor.execute(sql)
-        pr = cursor.fetchone()
-        res =  len(pr['first_body']) if pr['first_body'] else 0
-    return {"description_length": res}
+    cursor.execute(sql)
+    res = cursor.fetchone()
+    return {"description_length": len(res['body']) if res['body'] else 0}
 
 
 def commits_on_files_touched(repo_id, pr_id):
@@ -246,5 +187,28 @@ def merge_decision(repo_id, pr_id):
 
     return {'merge_decision': res}
 
+# Find at_mention in text
+# Num of @uname mentions in the description(title doesn't take effect)
+# Modelling the results of: An Exploratory Study of @-mention in GitHub's Pull-requests
+# DOI: 10.1109/APSEC.2014.58
+def at_mentions_in_description(body):
+    count = len(re.findall(r'@(?!\-)([a-zA-Z0-9\-]+)(?<!\-)', re.sub(r'`.*?`', '', re.sub(r'[\w]*@[\w]+\.[\w]+', '', body))))
+    return count
+
 def at_tag_in_description(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+    sql = f'''--sql
+        select body, title
+        from pr_description_first_version
+        where pr_id = {pr_id};
+    '''
+    cursor.execute(sql)
+    res = cursor.fetchone()
+    return {"at_mentions_in_description": at_mentions_in_description(res['body']) if res['body'] else 0}
+
+
+def backward_link(repo_id, pr_id):
+    '''
+        [backward_issue_link, backward_pr_link]
+    '''
     pass

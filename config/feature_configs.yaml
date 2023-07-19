@@ -1,16 +1,21 @@
 features:
   - name: src.features.pull_request.num_commits
-    enabled: true
+    enabled: false
   - name: src.features.pull_request.files_level # [files_changed, files_modified, files_added, files_deleted]
-    enabled: true
+    enabled: false
   - name: src.features.pull_request.churn_level # [churn_addition, churn_deletion, test_churn, src_churn, test_inclusion]
+    enabled: false
+  - name: src.features.pull_request.description_length 
     enabled: true
-  - name: src.features.pull_request.description_length
+  - name: src.features.pull_request.at_tag_in_description
     enabled: true
+  - name: src.features.pull_request.backward_link
+    enabled: false
   - name: src.features.pull_request.commits_on_files_touched
-    enabled: true
+    enabled: false
   - name: src.features.pull_request.merge_decision
-    enabled: true
+    enabled: false
+
 
   - name: src.features.project.sloc
     enabled: false
@@ -21,42 +26,42 @@ features:
   - name: src.features.project.asserts_per_kloc
     enabled: false
   - name: src.features.project.project_age
-    enabled: true
+    enabled: false
   - name: src.features.project.pushed_delta
-    enabled: true
-  - name: src.features.project.pr_succ_rate
-    enabled: true
+    enabled: false
+  - name: src.features.project.pr_succ_rate # [rely on merge_decision]
+    enabled: false
   - name: src.features.project.stars
-    enabled: true
+    enabled: false
   - name: src.features.project.perc_external_contribs
-    enabled: true
+    enabled: false
   - name: src.features.project.team_size 
-    enabled: true
+    enabled: false
   - name: src.features.project.open_issue_num 
-    enabled: true
+    enabled: false
   - name: src.features.project.open_pr_num
-    enabled: true
+    enabled: false
   - name: src.features.project.fork_num
-    enabled: true
+    enabled: false
 
 
   - name: src.features.contributor.bot_user
-    enabled: true
+    enabled: false
   # - name: src.features.contributor.first_pr
-  #   enabled: true # impl. in prev_pullreqs
+  #   enabled: false # impl. in prev_pullreqs
   - name: src.features.contributor.core_member
-    enabled: true
+    enabled: false
   - name: src.features.contributor.social_strength
-    enabled: true
+    enabled: false
   - name: src.features.contributor.followers
-    enabled: true
+    enabled: false
   - name: src.features.contributor.prev_pullreqs 
-    enabled: true
+    enabled: false
   - name: src.features.contributor.contrib_perc_commit
-    enabled: true
+    enabled: false
   - name: src.features.contributor.prior_review_num
-    enabled: true
+    enabled: false
   - name: src.features.contributor.prior_interaction 
-    enabled: true
-  - name: src.features.contributor.requester_succ_rate
-    enabled: true
+    enabled: false
+  - name: src.features.contributor.requester_succ_rate # [rely on merge_decision]
+    enabled: false
