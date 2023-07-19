@@ -144,8 +144,17 @@ def churn_level(repo_id, pr_id):
                 "test_inclusion": test_inclusion 
                 }
 
+# Find at_mention in text
+# Num of @uname mentions in the description(title doesn't take effect)
+# Modelling the results of: An Exploratory Study of @-mention in GitHub's Pull-requests
+# DOI: 10.1109/APSEC.2014.58
+def at_mentions_in_description(body):
+    count = len(re.findall(r'@(?!\-)([a-zA-Z0-9\-]+)(?<!\-)', re.sub(r'`.*?`', '', re.sub(r'[\w]*@[\w]+\.[\w]+', '', body))))
+    return count
+
 global_description_length_ssid = 0
 global_description_length_map = {}
+global_description_at_mention_map = {}
 LOCK = threading.Lock()
 def description_length(repo_id, pr_id, at_open=True):
     conn, cursor = get_sqlite_db_connection()
@@ -175,9 +184,12 @@ def description_length(repo_id, pr_id, at_open=True):
             global_description_length_ssid = repo_id
             for pr in res:
                 global_description_length_map[pr['id']] = len(pr['first_body']) if pr['first_body'] else 0
+                global_description_at_mention_map[pr['id']] = at_mentions_in_description(pr['first_body']) if pr['first_body'] else 0
+
     LOCK.release()
 
-    return {"description_length": global_description_length_map[pr_id] if pr_id in global_description_length_map else 0}
+    return {"description_length": global_description_length_map[pr_id] if pr_id in global_description_length_map else 0,
+            "at_mentions_in_description": global_description_at_mention_map[pr_id] if pr_id in global_description_at_mention_map else 0}
 
 
 def description_length_v1(repo_id, pr_id, at_open=True):
@@ -233,3 +245,6 @@ def merge_decision(repo_id, pr_id):
         res = res['merge'] if res else 0
 
     return {'merge_decision': res}
+
+def at_tag_in_description(repo_id, pr_id):
+    pass
