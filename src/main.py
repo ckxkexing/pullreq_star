@@ -54,10 +54,10 @@ class handleThread(threading.Thread):
         self.out_q.put(None)
 
 # logger 
-def output_logger(queue):
+def output_logger(queue, column_name):
     cnt = 0
     finished = 0
-    col = mongo_db['features']
+    col = mongo_db[column_name]
 
     while True:
         time.sleep(5)
@@ -82,13 +82,15 @@ def output_logger(queue):
 
 
 if __name__ == "__main__":
-    # feature config
-    with open('config/feature_configs.yaml', 'r') as f:
-        config = yaml.safe_load(f)
 
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('-o', dest='output_file')
+    parser.add_argument('-c', dest='config_file')
+    parser.add_argument('-o', dest='output_column')
     args = parser.parse_args()
+
+    # function to be run
+    with open(args.config_file, 'r') as f:
+        config = yaml.safe_load(f)
 
     for owner, repo, lang in repos:
 
@@ -104,7 +106,7 @@ if __name__ == "__main__":
         for pr in prs:
             tasks.put(pr)
 
-        output = threading.Thread(target=output_logger, args=(out_q,))
+        output = threading.Thread(target=output_logger, args=(out_q, args.output_column,))
         output.daemon = True
         output.start() 
 
