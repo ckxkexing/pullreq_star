@@ -207,8 +207,41 @@ def at_tag_in_description(repo_id, pr_id):
     return {"at_mentions_in_description": at_mentions_in_description(res['body']) if res['body'] else 0}
 
 
+def find_links(body):
+    if type(body) is not str:
+        return []
+    matches = re.findall(r'#([0-9]+)', body)
+    return matches
+
+
 def backward_link(repo_id, pr_id):
     '''
         [backward_issue_link, backward_pr_link]
     '''
-    pass
+    conn, cursor = get_sqlite_db_connection()
+    sql = f'''--sql
+        select body, title
+        from pr_description_first_version
+        where pr_id = {pr_id};
+    '''
+    cursor.execute(sql)
+    res = cursor.fetchone()
+    github_numbers = find_links(res['body'])
+
+    issue_link_cnt, pr_link_cnt = 0, 0
+
+    for number in set(github_numbers):
+        sql = f'''--sql
+            select id, pr_id
+            from issues i
+            where i.project_id = {repo_id} and i.number = {number}
+        ;'''
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        if res is not None and res['id'] :
+            if res['pr_id'] == 0:
+                issue_link_cnt += 1
+            else :
+                pr_link_cnt += 1
+
+    return {"backward_issue_link":issue_link_cnt, "backward_pr_link":pr_link_cnt}
