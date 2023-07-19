@@ -3,7 +3,7 @@
 
 ```sh
 # setting In `config/feature_configs.yaml`
-python -m src.main
+python -m src.main -c config/feature_configs.yaml -o features
 ```
 
 ### diff input 
@@ -16,6 +16,11 @@ python -m src.main_diff
 
 ```sh
 python -m src.main_description
+```
+
+### label state
+```sh
+python -m src.main -c config/label_state_configs.yaml -o label_state
 ```
 
 ### Thanks
