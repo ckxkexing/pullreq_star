@@ -88,6 +88,10 @@ if __name__ == "__main__":
     parser.add_argument('-o', dest='output_column')
     args = parser.parse_args()
 
+    col = mongo_db[args.output_column]
+    resp = col.create_index("id")
+    resp = col.create_index("html_url")
+
     # function to be run
     with open(args.config_file, 'r') as f:
         config = yaml.safe_load(f)

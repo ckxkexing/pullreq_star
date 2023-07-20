@@ -173,19 +173,6 @@ def commits_on_files_touched(repo_id, pr_id):
 
     return {"coft" : res}
 
-def merge_decision(repo_id, pr_id):
-    conn, cursor = get_sqlite_db_connection()
-    sql = f'''
-        select merge
-        from pr_merge_decision
-        where pr_id = {pr_id}
-    '''
-    with conn:
-        cursor.execute(sql)
-        res = cursor.fetchone()
-        res = res['merge'] if res else 0
-
-    return {'merge_decision': res}
 
 # Find at_mention in text
 # Num of @uname mentions in the description(title doesn't take effect)

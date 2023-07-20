@@ -6,14 +6,12 @@ features:
   - name: src.features.pull_request.churn_level # [churn_addition, churn_deletion, test_churn, src_churn, test_inclusion]
     enabled: false
   - name: src.features.pull_request.description_length 
-    enabled: true
+    enabled: false
   - name: src.features.pull_request.at_tag_in_description
-    enabled: true
+    enabled: false
   - name: src.features.pull_request.backward_link
-    enabled: false
+    enabled: true
   - name: src.features.pull_request.commits_on_files_touched
-    enabled: false
-  - name: src.features.pull_request.merge_decision
     enabled: false
 
 

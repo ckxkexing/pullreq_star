@@ -1,0 +1,7 @@
+features:
+  - name: src.labels.pull_request.time_to_first_response
+    enabled: true
+  - name: src.labels.pull_request.time_to_handle
+    enabled: true
+  - name: src.labels.pull_request.merge_decision
+    enabled: true
