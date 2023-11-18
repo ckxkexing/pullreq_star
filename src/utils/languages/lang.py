@@ -1,4 +1,4 @@
-class Lang():
+class Lang:
     def test_file_filter():
         pass
 
@@ -11,7 +11,7 @@ def strip_c_style_comments(line):
     res = ""
     pre = ""
     for i in line:
-        if pre == i and i == '/':
+        if pre == i and i == "/":
             pre = ""
             break
         res += pre

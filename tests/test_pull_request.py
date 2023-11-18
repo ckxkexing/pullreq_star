@@ -1,9 +1,10 @@
-import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
 
-from src.features.pull_request import at_mentions_in_description
-from src.features.pull_request import find_links
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from src.features.pull_request import at_mentions_in_description, find_links
+
 
 def test_at_mention():
     body = "@aaa, review please"
@@ -17,7 +18,6 @@ def test_at_mention():
 
     body = "lgtm, @merge-bot,@leader"
     assert at_mentions_in_description(body) == 2
-
 
     body = "contact me on aaa@gmail.com"
     assert at_mentions_in_description(body) == 0
@@ -34,4 +34,4 @@ def test_at_mention():
 
 def test_description_link():
     body = "reload by #2333, #3333, and close #1"
-    assert find_links(body) == ['2333', '3333', '1']
+    assert find_links(body) == ["2333", "3333", "1"]

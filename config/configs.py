@@ -1,4 +1,5 @@
 import yaml
+
 f = open("config/configs.yaml", "r")
 config = yaml.load(f.read(), Loader=yaml.SafeLoader)
 
@@ -6,7 +7,7 @@ repos = []
 with open("project_list.txt", "r") as f:
     for line in f:
         lin = line.strip()
-        if not lin :
+        if not lin:
             continue
         owner, repo, lang = lin.split()
         repos.append((owner, repo, lang))

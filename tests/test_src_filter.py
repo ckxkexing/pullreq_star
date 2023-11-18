@@ -1,8 +1,10 @@
-import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.utils.languages import *
+
 
 def test_python():
     linguist = PythonData()
@@ -17,4 +19,3 @@ def test_java():
 
     filename = "server/src/main/java/org/elasticsearch/discovery/DiscoveryModule.java"
     assert linguist.test_file_filter(filename) == False
-

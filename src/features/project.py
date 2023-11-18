@@ -1,40 +1,48 @@
 from dateutil.relativedelta import relativedelta
-from src.utils.utils import time_handler, str_handler
-from dbs.sqlite_base import get_sqlite_db_connection
+
 from dbs.ghtorrent_base import get_mysql_db_connection
+from dbs.sqlite_base import get_sqlite_db_connection
+from src.utils.utils import str_handler, time_handler
+
 
 # Todo
 def sloc(repo_id, pr_id):
     # src_lines
     pass
 
+
 # Todo
 def test_lines_per_kloc(repo_id, pr_id):
     # test_lines / (test_lines + src_lines) * 1000
     pass
 
+
 # Todo: Gousios found it strongly correlated with test_lines_per_kloc
 def test_cases_per_kloc(repo_id, pr_id):
     pass
+
 
 # Todo: Gousios found it strongly correlated with test_lines_per_kloc
 def asserts_per_kloc(repo_id, pr_id):
     pass
 
+
 def project_age(repo_id, pr_id):
     conn, cursor = get_sqlite_db_connection()
 
-    sql = f'''--sql
-        select (strftime('%Y', prs.created_at) - STRFTIME('%Y', p.created_at)) * 12 + strftime('%m', prs.created_at) - STRFTIME('%m', p.created_at) AS project_age
-        from prs 
-        left join projects p 
-        on prs.base_repo_id  = p.id 
+    sql = f"""--sql
+        select (strftime('%Y', prs.created_at) - STRFTIME('%Y', p.created_at)) * 12 +
+                strftime('%m', prs.created_at) - STRFTIME('%m', p.created_at) AS project_age
+        from prs
+        left join projects p
+        on prs.base_repo_id  = p.id
         where prs.id = {pr_id}
-    ;'''
+    ;"""
     with conn:
         cursor.execute(sql)
         res = cursor.fetchone()
-        return {'project_age': 0 if not res else res['project_age']}
+        return {"project_age": 0 if not res else res["project_age"]}
+
 
 def pushed_delta(repo_id, pr_id):
     # in mins
@@ -60,25 +68,30 @@ def pushed_delta(repo_id, pr_id):
         res1 = cursor.fetchone()
         if not res1:
             return {"pushed_delta": 0}
-        previous_created_at = time_handler(res1['created_at'])
+        previous_created_at = time_handler(res1["created_at"])
 
         cursor.execute(current_sql)
         res2 = cursor.fetchone()
-        current_created_at = time_handler(res2['created_at'])
-        return {"pushed_delta": divmod((current_created_at - previous_created_at).total_seconds(), 60)[0]}
+        current_created_at = time_handler(res2["created_at"])
+        return {
+            "pushed_delta": divmod(
+                (current_created_at - previous_created_at).total_seconds(), 60
+            )[0]
+        }
+
 
 def pr_succ_rate(repo_id, pr_id):
     # pr_before_merged / pr_before
     conn, cursor = get_sqlite_db_connection()
 
-    # get pr created_at 
-    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    # get pr created_at
+    sql = f"""select created_at, creator_id from prs where id = {pr_id}"""
     with conn:
         cursor.execute(sql)
         res = cursor.fetchone()
-        created_at = res['created_at']
+        created_at = res["created_at"]
 
-    sql = f'''
+    sql = f"""
         select pmd.merge, count(p.id) as cnt
         from prs p
         left join pr_merge_decision pmd
@@ -86,7 +99,7 @@ def pr_succ_rate(repo_id, pr_id):
         where p.closed_at < "{created_at}"
             and p.base_repo_id = {repo_id}
         GROUP BY pmd.merge
-    '''
+    """
 
     with conn:
         cursor.execute(sql)
@@ -94,10 +107,11 @@ def pr_succ_rate(repo_id, pr_id):
         all_pr_num = 0
         merge_pr_num = 0
         for status in res:
-            all_pr_num += status['cnt']
-            if status['merge'] > 0:
-                merge_pr_num += status['cnt']
-        return {"pr_succ_rate":merge_pr_num/all_pr_num if all_pr_num else 0}
+            all_pr_num += status["cnt"]
+            if status["merge"] > 0:
+                merge_pr_num += status["cnt"]
+        return {"pr_succ_rate": merge_pr_num / all_pr_num if all_pr_num else 0}
+
 
 def stars(repo_id, pr_id):
     # in zhang's work, it is watcher count
@@ -105,78 +119,79 @@ def stars(repo_id, pr_id):
     gh_conn, gh_cursor = get_mysql_db_connection()
 
     # get full name
-    sql = f'''select full_name from projects where id = {repo_id}'''
+    sql = f"""select full_name from projects where id = {repo_id}"""
     with conn:
         cursor.execute(sql)
-        repo_name = cursor.fetchone()['full_name']
+        repo_name = cursor.fetchone()["full_name"]
         owner, name = repo_name.split("/")
 
     # get repo_id in ghtorrent
-    sql = f'''select id from users where login = '{owner}' '''
+    sql = f"""select id from users where login = '{owner}' """
     gh_cursor.execute(sql)
-    id = gh_cursor.fetchone()['id']
-    sql = f'''select id from projects where owner_id={id} and name='{name}' '''
+    id = gh_cursor.fetchone()["id"]
+    sql = f"""select id from projects where owner_id={id} and name='{name}' """
     gh_cursor.execute(sql)
-    id = gh_cursor.fetchone()['id']
+    id = gh_cursor.fetchone()["id"]
 
     # get pr created time
-    sql = f'''select created_at from prs where id = {pr_id}'''
+    sql = f"""select created_at from prs where id = {pr_id}"""
     with conn:
         cursor.execute(sql)
-        created_at = cursor.fetchone()['created_at']
+        created_at = cursor.fetchone()["created_at"]
 
     # get watcher count
     # add index on created_at and repo_id
-    sql = f'''
+    sql = f"""
         select count(distinct(w.user_id)) as num_watchers
         from reduced_watchers w
         where w.created_at < '{created_at}'
             and w.repo_id = {id}
-    '''
+    """
     gh_cursor.execute(sql)
-    res = gh_cursor.fetchone()['num_watchers']
-    return {"stars" : res}
+    res = gh_cursor.fetchone()["num_watchers"]
+    return {"stars": res}
+
 
 def perc_external_contribs(repo_id, pr_id, months_back=3):
     # get pr created_at and creator_id
     conn, cursor = get_sqlite_db_connection()
 
-    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    sql = f"""select created_at, creator_id from prs where id = {pr_id}"""
     with conn:
         cursor.execute(sql)
         res = cursor.fetchone()
-        created_at = res['created_at']
+        created_at = res["created_at"]
 
     oldest = time_handler(created_at) - relativedelta(months=months_back)
     oldest = str_handler(oldest)
 
     # get core member list
-    sql = f'''
-        select user_id 
+    sql = f"""
+        select user_id
         from core_members c
         where project_id = {repo_id}
             and created_at < "{created_at}"
-            and created_at > "{oldest}"   
-    '''
+            and created_at > "{oldest}"
+    """
     with conn:
         cursor.execute(sql)
         res = cursor.fetchall()
-        core_numbers = [u['user_id'] for u in res]
+        core_numbers = [u["user_id"] for u in res]
     core_numbers = set(core_numbers)
     # get github commit author list
-    sql = f'''
+    sql = f"""
         select author_id, count(distinct(c.id)) as cnt
         from project_commits pc, commits c
         where pc.commit_id = c.id
             and created_at < "{created_at}"
-            and created_at > "{oldest}" 
+            and created_at > "{oldest}"
             and pc.project_id = {repo_id}
         GROUP BY author_id;
-    '''
+    """
     with conn:
         cursor.execute(sql)
         res = cursor.fetchall()
-        committer_numbers = [(u['author_id'], u['cnt']) for u in res]
+        committer_numbers = [(u["author_id"], u["cnt"]) for u in res]
 
     all_commit_num = 0
     external_commit_num = 0
@@ -185,38 +200,43 @@ def perc_external_contribs(repo_id, pr_id, months_back=3):
         if u not in core_numbers:
             external_commit_num += c
 
-    return {"perc_external_contribs" : external_commit_num / all_commit_num if all_commit_num else 0}
+    return {
+        "perc_external_contribs": external_commit_num / all_commit_num
+        if all_commit_num
+        else 0
+    }
+
 
 def team_size(repo_id, pr_id, months_back=3):
     # get pr created_at and creator_id
     conn, cursor = get_sqlite_db_connection()
 
-    sql = f'''select created_at, creator_id from prs where id = {pr_id}'''
+    sql = f"""select created_at, creator_id from prs where id = {pr_id}"""
     with conn:
         cursor.execute(sql)
         res = cursor.fetchone()
-        created_at = res['created_at']
-        user_id = res['creator_id']
+        created_at = res["created_at"]
 
     oldest = time_handler(created_at) - relativedelta(months=months_back)
     oldest = str_handler(oldest)
 
-    sql = f'''
+    sql = f"""
         select count(user_id) as team_size
         from core_members c
         where project_id = {repo_id}
             and created_at < "{created_at}"
             and created_at > "{oldest}"
-    '''
+    """
     with conn:
         cursor.execute(sql)
         res = cursor.fetchone()
-        return {"team_size": res['team_size']}
+        return {"team_size": res["team_size"]}
+
 
 def open_issue_num(repo_id, pr_id):
     conn, cursor = get_sqlite_db_connection()
 
-    sql = '''--sql
+    sql = """--sql
         SELECT
             SUM(CASE WHEN issues.created_at < (SELECT created_at FROM prs WHERE id = ?) THEN 1 ELSE 0 END) AS opened_num,
             SUM(CASE WHEN issues.closed_at is not NULL and issues.closed_at < (SELECT created_at FROM prs WHERE id = ?) THEN 1 ELSE 0 END) AS closed_num
@@ -224,20 +244,21 @@ def open_issue_num(repo_id, pr_id):
             issues
         WHERE
             issues.project_id = ? AND
-            issues.pr_id = 0    -- not a pr 
+            issues.pr_id = 0    -- not a pr
     ;
-    '''
+    """ # noqa
     with conn:
         cursor.execute(sql, (pr_id, pr_id, repo_id))
         result = cursor.fetchone()
-        opened_num = result['opened_num'] if result['opened_num'] else 0
-        closed_num = result['closed_num'] if result['closed_num'] else 0
+        opened_num = result["opened_num"] if result["opened_num"] else 0
+        closed_num = result["closed_num"] if result["closed_num"] else 0
         return {"open_issue_num": opened_num - closed_num}
+
 
 def open_pr_num(repo_id, pr_id):
     conn, cursor = get_sqlite_db_connection()
 
-    sql = '''--sql
+    sql = """--sql
         SELECT
             SUM(CASE WHEN issues.created_at < (SELECT created_at FROM prs WHERE id = ?) THEN 1 ELSE 0 END) AS opened_num,
             SUM(CASE WHEN issues.closed_at is not NULL and issues.closed_at < (SELECT created_at FROM prs WHERE id = ?) THEN 1 ELSE 0 END) AS closed_num
@@ -247,47 +268,47 @@ def open_pr_num(repo_id, pr_id):
             issues.project_id = ? AND
             issues.pr_id > 0
     ;
-    '''
+    """ # noqa
     with conn:
         cursor.execute(sql, (pr_id, pr_id, repo_id))
         result = cursor.fetchone()
 
-        opened_num = result['opened_num'] if result['opened_num'] else 0
-        closed_num = result['closed_num'] if result['closed_num'] else 0
+        opened_num = result["opened_num"] if result["opened_num"] else 0
+        closed_num = result["closed_num"] if result["closed_num"] else 0
         return {"open_pr_num": opened_num - closed_num}
+
 
 def fork_num(repo_id, pr_id):
     conn, cursor = get_sqlite_db_connection()
     gh_conn, gh_cursor = get_mysql_db_connection()
 
     # get full name
-    sql = f'''select full_name from projects where id = {repo_id}'''
+    sql = f"""select full_name from projects where id = {repo_id}"""
     with conn:
         cursor.execute(sql)
-        repo_name = cursor.fetchone()['full_name']
+        repo_name = cursor.fetchone()["full_name"]
         owner, name = repo_name.split("/")
 
     # get repo_id in ghtorrent
-    sql = f'''select id from users where login = '{owner}' '''
+    sql = f"""select id from users where login = '{owner}' """
     gh_cursor.execute(sql)
-    id = gh_cursor.fetchone()['id']
-    sql = f'''select id from projects where owner_id={id} and name='{name}' '''
+    id = gh_cursor.fetchone()["id"]
+    sql = f"""select id from projects where owner_id={id} and name='{name}' """
     gh_cursor.execute(sql)
-    id = gh_cursor.fetchone()['id']
+    id = gh_cursor.fetchone()["id"]
     # get pr created_at
-    sql = f'''select created_at from prs where id = {pr_id}'''
+    sql = f"""select created_at from prs where id = {pr_id}"""
     with conn:
         cursor.execute(sql)
-        created_at = cursor.fetchone()['created_at']
+        created_at = cursor.fetchone()["created_at"]
 
     # get fork count
-    sql = f'''
-        select count(*) as num_forks 
+    sql = f"""
+        select count(*) as num_forks
         from projects p
         where p.created_at < '{created_at}'
             and p.forked_from = {id}
-    '''
+    """
     gh_cursor.execute(sql)
-    res = gh_cursor.fetchone()['num_forks']
-    return {"num_forks" : res}
-
+    res = gh_cursor.fetchone()["num_forks"]
+    return {"num_forks": res}
