@@ -23,6 +23,11 @@ python -m src.main_description
 python -m src.main -c config/label_state_configs.yaml -o label_state
 ```
 
+### insert/export data
+```sh
+python tools/export_features.py
+```
+
 ### Thanks
 - Gousios
 - Xunhui Zhang
