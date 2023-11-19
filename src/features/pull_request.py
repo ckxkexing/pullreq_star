@@ -2,7 +2,83 @@ import json
 import re
 
 from dbs.sqlite_base import get_sqlite_db_connection
-from utils.linguist import get_linguist
+from src.utils.linguist import get_linguist
+from src.utils.utils import time_handler
+
+
+def list_comments(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+    sql = f"""--sql
+        select prs.id, prs.url, prs.html_url, ic.creator_id, ic.body, ic.created_at as comment_time
+            from prs
+            left join issues
+            on prs.id = issues.pr_id
+            left join issue_comments ic
+            on issues.id = ic.issue_id
+        where prs.id = {pr_id}
+    ;"""
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchall()
+        print(res)
+        return {}
+
+
+def num_comments(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+    sql = f"""--sql
+        select prs.id, prs.url, prs.html_url, count(prs.id) as num_comments,
+               count(distinct ic.creator_id) as num_user_comments,
+               sum(prs.creator_id == ic.creator_id) as num_author_comments
+            from prs
+            left join issues
+            on prs.id = issues.pr_id
+            left join issue_comments ic
+            on issues.id = ic.issue_id
+        where prs.id = {pr_id} and ic.created_at is not null and ic.created_at <= prs.closed_at
+        GROUP by prs.id
+    ;"""
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        if not res:
+            return {"num_comments": 0, "num_user_comments": 0, "num_author_comments": 0}
+        return {"num_comments": 0 if not res else res['num_comments'],
+                "num_user_comments": 0 if not res else res['num_user_comments'],
+                "num_author_comments": 0 if not res else res['num_author_comments']}
+
+
+def first_comment_time(repo_id, pr_id):
+    # in mins
+    conn, cursor = get_sqlite_db_connection()
+    sql = f"""--sql
+        select prs.id, prs.url, prs.html_url, prs.created_at as created_time,
+                ic.body as body, ic.created_at as comment_time
+            from prs
+            left join issues
+            on prs.id = issues.pr_id
+            left join issue_comments ic
+            on issues.id = ic.issue_id
+        where prs.id = {pr_id} and ic.created_at is not null and ic.created_at <= prs.closed_at
+        ORDER by comment_time asc
+        LIMIT 1
+    ;"""
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+
+        if res is None or res["comment_time"] is None or res["created_time"] is None:
+            return {
+                "first_comment_time": -1
+            }
+
+        current_created_at = time_handler(res["created_time"])
+        first_comment_created_at = time_handler(res["comment_time"])
+        return {
+            "first_comment_time": divmod(
+                (first_comment_created_at - current_created_at).total_seconds() , 60
+            )[0]
+        }
 
 
 def num_commits(repo_id, pr_id, at_open=True):
