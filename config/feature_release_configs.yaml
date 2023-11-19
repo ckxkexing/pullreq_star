@@ -1,0 +1,7 @@
+features:
+  - name: src.features.pull_request.num_comments
+    enabled: false
+  - name: src.features.pull_request.first_comment_time
+    enabled: false
+  - name: src.features.pull_request.num_tag_labels
+    enabled: true

@@ -81,6 +81,34 @@ def first_comment_time(repo_id, pr_id):
         }
 
 
+def num_tag_labels(repo_id, pr_id):
+    conn, cursor = get_sqlite_db_connection()
+    sql = f"""--sql
+        select prs.id, prs.url, prs.html_url, count(pr_labels.id) as num_tag_labels
+            from prs
+            left join pr_labels
+            on prs.id = pr_labels.pr_id
+        where prs.id = {pr_id}
+        GROUP by prs.id
+    ;"""
+    with conn:
+        cursor.execute(sql)
+        res = cursor.fetchone()
+        if not res:
+            return {"num_tag_labels": 0}
+        return {"num_tag_labels": 0 if not res else res["num_tag_labels"]}
+
+
+def pr_changed_info(repo_id, pr_id):
+    "pr title change"
+    "pr desc change"
+    pass
+
+
+def pr_review_info(repo_id, pr_id):
+    pass
+
+
 def num_commits(repo_id, pr_id, at_open=True):
     conn, cursor = get_sqlite_db_connection()
     sql = f"""--sql

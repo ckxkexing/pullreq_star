@@ -1,18 +1,11 @@
 """
     export pr features from mongodb
 """
-import csv
 
 from tqdm import tqdm
 
 from dbs.mongo_base import mongo_db
-
-
-def write_csv_data(csv_file_name, header, data):
-    with open(csv_file_name, "w") as f:
-        f_csv = csv.writer(f)
-        f_csv.writerow(header)
-        f_csv.writerows(data)
+from tools.file_util import write_csv_data
 
 
 col = mongo_db["features"]
